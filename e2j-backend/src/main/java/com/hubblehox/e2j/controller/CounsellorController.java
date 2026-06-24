@@ -7,6 +7,8 @@ import com.hubblehox.e2j.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.http.*;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +27,7 @@ public class CounsellorController {
     private final StudentBookingRepository          bookingRepo;
     private final PsychometricReportRepository      psychometricReportRepo;
     private final com.hubblehox.e2j.service.PsychometricService psychometricService;
+    private final JavaMailSender mailSender;
 
     private Counsellor get(User user) {
         return counsellorRepo.findByUser(user)
@@ -388,6 +391,60 @@ public class CounsellorController {
                 .orElseThrow(() -> new AppException("Not found", HttpStatus.NOT_FOUND));
         sessionRepo.delete(s);
         return ResponseEntity.ok(ApiResponse.ok(null, "Deleted"));
+    }
+
+    // ── Report comment + email ────────────────────────────────────────────────
+
+    @PostMapping("/bookings/{id}/report-comment")
+    public ResponseEntity<ApiResponse<String>> sendReportComment(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+
+        Counsellor c = get(user);
+        StudentBooking booking = bookingRepo.findById(id)
+                .filter(b -> b.getCounsellor().getId().equals(c.getId()))
+                .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
+
+        String comment     = body.getOrDefault("comment", "").strip();
+        String studentEmail = body.getOrDefault("studentEmail", booking.getStudent().getUser().getEmail());
+        String studentName  = body.getOrDefault("studentName", booking.getStudent().getUser().getName());
+
+        if (comment.isBlank()) throw new AppException("Comment cannot be empty", HttpStatus.BAD_REQUEST);
+
+        // Build report summary for email body
+        PsychometricReport report = psychometricReportRepo
+                .findTopByStudentOrderByCreatedAtDesc(booking.getStudent())
+                .orElse(null);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Dear ").append(studentName).append(",\n\n");
+        sb.append("Your counsellor ").append(c.getUser().getName())
+          .append(" has reviewed your psychometric report and shared the following feedback:\n\n");
+        sb.append("---\n").append(comment).append("\n---\n\n");
+
+        if (report != null) {
+            sb.append("📊 Your Assessment Summary:\n");
+            sb.append("  • Strongest Interest : ").append(report.getTopInterests()).append("\n");
+            sb.append("  • Top Career Match   : ").append(report.getTopCareerMatch()).append("\n");
+            sb.append("  • Overall Score      : ").append(report.getTotalScore()).append("\n\n");
+        }
+
+        sb.append("Session Date : ").append(booking.getSessionDate()).append("  ").append(booking.getSessionTime()).append("\n\n");
+        sb.append("Log in to the E2J platform to view your full report and next steps.\n\n");
+        sb.append("Regards,\nHubbleHox E2J Team");
+
+        try {
+            SimpleMailMessage msg = new SimpleMailMessage();
+            msg.setTo(studentEmail);
+            msg.setSubject("Your Psychometric Report — Counsellor Feedback from " + c.getUser().getName());
+            msg.setText(sb.toString());
+            mailSender.send(msg);
+        } catch (Exception e) {
+            throw new AppException("Failed to send email: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok("Email sent to " + studentEmail));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

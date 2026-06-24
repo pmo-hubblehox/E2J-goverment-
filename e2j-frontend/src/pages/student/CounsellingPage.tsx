@@ -170,11 +170,22 @@ export default function CounsellingPage() {
     }
     setPaying(true);
     setPayError(null);
-    api.post(`/student/counselling/counsellors/${selected.id}/book`, {
-      sessionDate: activeDay.date,
-      sessionTime: pickedTime,
-      feeAmount: selected.feeAmount ?? 0,
-    })
+    // Fetch latest psychometric report ID to attach to booking
+    const doBook = (psychometricReportId: number | null) =>
+      api.post(`/student/counselling/counsellors/${selected.id}/book`, {
+        sessionDate: activeDay.date,
+        sessionTime: pickedTime,
+        feeAmount: selected.feeAmount ?? 0,
+        ...(psychometricReportId ? { psychometricReportId } : {}),
+      });
+
+    api.get('/student/psychometric/reports')
+      .then(r => {
+        const reports = r.data?.data ?? [];
+        const latest = Array.isArray(reports) && reports.length > 0 ? reports[0] : null;
+        return doBook(latest?.id ?? null);
+      })
+      .catch(() => doBook(null))
       .then(r => {
         // ApiResponse wraps in .data — try both shapes defensively
         const booking = r.data?.data ?? r.data ?? null;
@@ -544,19 +555,28 @@ export default function CounsellingPage() {
 
                       {/* Right side */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
-                        {(c.skills ?? []).length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                            <span style={{ fontSize: '11px', color: SUB }}>Available Days</span>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              {c.skills.slice(0, 3).map(s => (
-                                <span key={s} style={{ padding: '4px 10px', border: `1px solid ${BORDER}`, borderRadius: '6px', fontSize: '11px', color: TEXT, fontWeight: 500 }}>{s.substring(0, 3)}</span>
-                              ))}
+                        {(() => {
+                          const DAY_ABBR: Record<string, string> = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+                          const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                          // availableDays field if present, else fall back to languages (old field), else default weekdays
+                          const rawDays: string[] = (c as any).availableDays ?? [];
+                          const displayDays = rawDays.length > 0
+                            ? rawDays.slice(0, 4).map(d => DAY_ABBR[d] ?? d.substring(0, 3))
+                            : ['Mon', 'Tue', 'Wed', 'Thu'];
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                              <span style={{ fontSize: '11px', color: SUB }}>Available Days</span>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {displayDays.map(d => (
+                                  <span key={d} style={{ padding: '4px 10px', border: `1px solid ${BORDER}`, borderRadius: '6px', fontSize: '11px', color: TEXT, fontWeight: 500 }}>{d}</span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                         <button onClick={() => toggleInlineSlots(c)}
                           style={{ padding: '10px 22px', borderRadius: '100px', border: 'none', background: '#E91E8C', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
-                          PROCEED WITH PAYMENT
+                          Select a Slot
                         </button>
                       </div>
                     </div>
@@ -613,7 +633,7 @@ export default function CounsellingPage() {
 
                             <button onClick={() => setView('payment')} disabled={!pickedTime}
                               style={{ padding: '11px 32px', borderRadius: '100px', border: 'none', background: pickedTime ? '#E91E8C' : '#CBD5E1', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: pickedTime ? 'pointer' : 'not-allowed' }}>
-                              PROCEED WITH PAYMENT
+                              Proceed with Payment
                             </button>
                           </>
                         )}

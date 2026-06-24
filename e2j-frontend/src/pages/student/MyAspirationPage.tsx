@@ -905,7 +905,7 @@ export default function MyAspirationPage() {
                       <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '4px' }}>Talk to a Counsellor</div>
                       <div style={{ fontSize: '13px', color: SUB }}>Discuss your results and get personalised guidance on your next steps.</div>
                     </div>
-                    <button onClick={() => setExploreStep('consult')}
+                    <button onClick={() => { resetExplore(); resetWizard(); setView('list'); navigate('/student/counselling'); }}
                       style={{ padding: '10px 24px', borderRadius: '100px', border: 'none', background: '#7C3AED', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       Book a Session <ChevronRight size={14} />
                     </button>
