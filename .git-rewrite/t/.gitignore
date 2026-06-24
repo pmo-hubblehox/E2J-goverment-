@@ -1,0 +1,34 @@
+# Maven
+e2j-backend/target/
+
+# Node
+e2j-frontend/node_modules/
+e2j-frontend/dist/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Env / secrets
+.env
+*.env.local
+
+# Compiled Java
+*.class
+
+# Uploads (user files — not for repo)
+e2j-backend/src/main/resources/uploads/

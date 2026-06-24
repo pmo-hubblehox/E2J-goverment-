@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Export</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.3.0/github-markdown.min.css">
+  <style>
+      body {
+          background-color: #ffffff;
+          color: #24292e;
+      }
+      .markdown-body {
+          box-sizing: border-box;
+          min-width: 200px;
+          max-width: 980px;
+          margin: 0 auto;
+          padding: 45px;
+          background-color: #ffffff;
+          color: #24292e;
+      }
+
+      /* Syntax Highlighting */
+      .hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_ { color: #d73a49; }
+      .hljs-title, .hljs-title.class_, .hljs-title.class_.inherited__, .hljs-title.function_ { color: #6f42c1; }
+      .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id { color: #005cc5; }
+      .hljs-regexp, .hljs-string, .hljs-meta .hljs-string { color: #032f62; }
+      .hljs-built_in, .hljs-symbol { color: #e36209; }
+      .hljs-comment, .hljs-code, .hljs-formula { color: #6a737d; }
+      .hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo { color: #22863a; }
+      .hljs-subst { color: #24292e; }
+      .hljs-section { color: #005cc5; font-weight: bold; }
+      .hljs-bullet { color: #005cc5; }
+      .hljs-emphasis { font-style: italic; }
+      .hljs-strong { font-weight: bold; }
+      .hljs-addition { color: #22863a; background-color: #f0fff4; }
+      .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+
+      .markdown-alert {
+          padding: 0.5rem 1rem;
+          margin-bottom: 16px;
+          border-left: 0.25em solid;
+          border-radius: 0.375rem;
+      }
+      .markdown-alert > :last-child {
+          margin-bottom: 0;
+      }
+      .markdown-alert-title {
+          margin: 0 0 8px;
+          font-weight: 600;
+          line-height: 1.25;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+      }
+      .markdown-alert-icon {
+          display: inline-flex;
+          width: 16px;
+          height: 16px;
+      }
+      .markdown-alert-icon svg {
+          width: 16px;
+          height: 16px;
+          fill: currentColor;
+      }
+      .markdown-alert-note { color: #0969da; border-left-color: #0969da; background-color: #ddf4ff; }
+      .markdown-alert-tip { color: #1a7f37; border-left-color: #1a7f37; background-color: #dafbe1; }
+      .markdown-alert-important { color: #8250df; border-left-color: #8250df; background-color: #fbefff; }
+      .markdown-alert-warning { color: #9a6700; border-left-color: #9a6700; background-color: #fff8c5; }
+      .markdown-alert-caution { color: #cf222e; border-left-color: #cf222e; background-color: #ffebe9; }
+      .markdown-alert > *:not(.markdown-alert-title) { color: #24292e; }
+
+      @media (max-width: 767px) {
+          .markdown-body {
+              padding: 15px;
+          }
+      }
+  </style>
+</head>
+<body>
+  <article class="markdown-body">
+      <h1>Skill Gap Analysis API Documentation</h1>
+<hr>
+<h2><strong>Overview</strong></h2>
+<p>This API lets users:</p>
+<ol>
+<li>Get job suggestions for a field</li>
+<li>Upload a resume for career analysis</li>
+<li>Check analysis progress</li>
+<li>Retrieve results</li>
+</ol>
+<hr>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+<th>Key Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/api/suggest-positions</code></td>
+<td>POST</td>
+<td>Get 10 job titles</td>
+<td><code>suggestions[]</code></td>
+</tr>
+<tr>
+<td><code>/api/analyze</code></td>
+<td>POST</td>
+<td>Upload &amp; queue analysis</td>
+<td><code>task_id</code></td>
+</tr>
+<tr>
+<td><code>/api/status/{task_id}</code></td>
+<td>GET</td>
+<td>Check progress</td>
+<td><code>status</code>, <code>progress</code></td>
+</tr>
+<tr>
+<td><code>/api/result/{task_id}</code></td>
+<td>GET</td>
+<td>Fetch final results</td>
+<td>Analysis <code>result</code> object</td>
+</tr>
+</tbody></table>
+<hr>
+<h2><strong>Endpoints</strong></h2>
+<hr>
+<h3>1️⃣ <strong>Suggest Job Positions</strong></h3>
+<p><strong>POST</strong> <code>/api/suggest-positions</code></p>
+<p>Get exactly 10 job position suggestions for a career field.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"field"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"data science"</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Response (Success 200):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"suggestions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-string">"Data Scientist"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Machine Learning Engineer"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Data Analyst"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Business Intelligence Analyst"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Data Engineer"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"AI Research Scientist"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Data Science Manager"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Statistical Analyst"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Data Consultant"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-string">"Deep Learning Specialist"</span>
+  <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Response (Validation Error 400):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"detail"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Field must be at least 3 characters"</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Notes:</strong></p>
+<ul>
+<li>Results are cached for 24 hours—same field returns quickly</li>
+<li>Returns exactly 10 positions or empty array if field too short</li>
+</ul>
+<hr>
+<h3>2️⃣ <strong>Submit Analysis</strong></h3>
+<p><strong>POST</strong> <code>/api/analyze</code></p>
+<p>Upload a resume and start career analysis. Returns a task ID to check progress.</p>
+<p><strong>Form Data Fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>job_designation</code></td>
+<td>string</td>
+<td>yes</td>
+<td>Target job role (e.g., "Software Engineer")</td>
+</tr>
+<tr>
+<td><code>analysis_mode</code></td>
+<td>string</td>
+<td>yes</td>
+<td>Analysis type (" Course Recommendation” only for now)</td>
+</tr>
+<tr>
+<td><code>num_sample_jobs</code></td>
+<td>integer</td>
+<td>yes</td>
+<td>Number of sample jobs to analyze (e.g., 10)</td>
+</tr>
+<tr>
+<td><code>resume_file</code></td>
+<td>file</td>
+<td>yes</td>
+<td>PDF/DOCX resume file</td>
+</tr>
+<tr>
+<td><code>curriculum_choice</code></td>
+<td>string</td>
+<td>yes</td>
+<td>Curriculum name (currently only "Computer Science", "Civil Engineering", "Mechanical Engineering", "Electrical Engineering")</td>
+</tr>
+</tbody></table>
+<p><strong>Response (Success 200):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"task_id"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"abc123def456"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"message"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Analysis started"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"estimated_time"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2-5 minutes"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"job_status"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"queued"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"queue_position"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Response (Error 500):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"detail"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Failed to start analysis: &lt;error message&gt;"</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Notes:</strong></p>
+<ul>
+<li><code>task_id</code> is used in status/result endpoints</li>
+<li><code>queue_position</code> shows your position in queue (0 = running)</li>
+<li>File is saved server-side with unique name</li>
+</ul>
+<hr>
+<h3>3️⃣ <strong>Check Task Status</strong></h3>
+<p><strong>GET</strong> <code>/api/status/{task_id}</code></p>
+<p>Poll this endpoint to see if analysis is complete.</p>
+<p><strong>URL Parameter:</strong></p>
+<ul>
+<li><code>task_id</code> (string) – from <code>/api/analyze</code> response</li>
+</ul>
+<p><strong>Response (Success 200):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"task_id"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"abc123def456"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"status"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"processing"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"progress"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">45</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"message"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Analyzing resume sections..."</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"updated_at"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"2025-02-17T10:30:00.123456"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"result_available"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"error"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Status Values:</strong></p>
+<ul>
+<li><code>queued</code> – waiting in queue</li>
+<li><code>started</code> / <code>processing</code> – currently running</li>
+<li><code>finished</code> – complete, ready for <code>/api/result</code></li>
+<li><code>failed</code> – error occurred (check <code>error</code> field)</li>
+</ul>
+<p><strong>Response (Not Found 404):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"detail"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Task not found: Job ... does not exist"</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Notes:</strong></p>
+<ul>
+<li>Poll every 3–5 seconds</li>
+<li><code>progress</code> is 0–100 percentage</li>
+<li><code>result_available</code> true only when status is <code>finished</code></li>
+</ul>
+<hr>
+<h3>4️⃣ <strong>Get Task Result</strong></h3>
+<p><strong>GET</strong> <code>/api/result/{task_id}</code></p>
+<p>Retrieve the completed analysis results.</p>
+<p><strong>URL Parameter:</strong></p>
+<ul>
+<li><code>task_id</code> (string) – from <code>/api/analyze</code> response</li>
+</ul>
+<p><strong>Response (Success 200):</strong></p>
+<pre><code class="hljs json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"skill_clusters_w_classification"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Soft"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* cluster_name: [ [skill, weight, is_core], ... ] */</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Technical"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* ... */</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Knowledge"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* ... */</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"cluster_wise_course_recommendation"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Soft"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* cluster_name: { "courses": { ... } } */</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Technical"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* ... */</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Knowledge"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-comment">/* ... */</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre><p><strong>Errors:</strong></p>
+<ul>
+<li><code>400</code> if task not finished:<pre><code class="hljs json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">"detail"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Task not completed. Status: processing"</span> <span class="hljs-punctuation">}</span></code></pre></li>
+<li><code>404</code> if result missing:<pre><code class="hljs json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">"detail"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"No result found"</span> <span class="hljs-punctuation">}</span></code></pre></li>
+<li><code>500</code> on server error</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Results expire after 1 hour</li>
+<li>Call only when <code>result_available</code> is true from status endpoint</li>
+</ul>
+<hr>
+
+  </article>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix \\\"./E2J App/Backend\\\"\" \"npm run dev --prefix \\\"./E2J App/Frontend\\\"\""
+  }
+}

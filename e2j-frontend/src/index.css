@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+:root {
+  /* ── Legacy tokens (dashboard/module usage) ────────────────── */
+  --primary: #4F46E5;
+  --primary-dark: #3730A3;
+  --primary-light: #EEF2FF;
+  --secondary: #EC4899;
+  --secondary-dark: #BE185D;
+  --success: #22C55E;
+  --success-light: #DCFCE7;
+  --error: #EF4444;
+  --error-light: #FEE2E2;
+  --warning: #F59E0B;
+  --warning-light: #FEF3C7;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --bg: #F9FAFB;
+  --bg-white: #FFFFFF;
+  --sidebar-width: 76px;
+  --topbar-height: 64px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+
+  /* ── Design-standard tokens (auth / portal-wide standard) ──── */
+  --color-primary:        #3F41D1;
+  --color-primary-hover:  #3537B8;
+  --color-title:          #212121;
+  --color-text:           #666666;
+  --color-border:         #A3A3A3;
+  --color-error:          #E6393E;
+  --color-white:          #FFFFFF;
+  --color-surface-muted:  rgba(35, 54, 61, 0.04);
+  --shadow-elev-1:        4px 4px 7.5px rgba(76, 78, 100, 0.15);
+  --overlay-image:        linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%);
+  /* Geometry */
+  --radius-input:   4px;
+  --radius-card:    10px;
+  --radius-pill:    100px;
+  --height-input:   56px;
+  --height-btn:     40px;
+  /* Typography */
+  --fs-h4:      34px;
+  --fs-h5:      24px;
+  --fs-h6:      20px;
+  --fs-body:    16px;
+  --fs-sub2:    14px;
+  --fs-caption: 12px;
+  --fs-error:   13px;
+  /* Spacing */
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { width: 100%; min-height: 100vh; }
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Auth field standard ─────────────────────────────────────────────────── */
+.auth-field {
+  transition: border-color 0.15s ease;
+}
+.auth-field:focus {
+  border-color: var(--color-primary) !important;
+  outline: none;
+}
+
+/* ── Auth primary button hover ───────────────────────────────────────────── */
+.auth-btn-primary {
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.auth-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover) !important;
+}
+.auth-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed !important;
+}
+
+/* ── Auth text button ────────────────────────────────────────────────────── */
+.auth-btn-text {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--fs-sub2);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 10px 12px;
+  text-transform: capitalize;
+  transition: opacity 0.15s ease;
+}
+.auth-btn-text:hover { opacity: 0.8; }
+.auth-btn-text:disabled { color: #A3A3A3; cursor: not-allowed; }
