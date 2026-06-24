@@ -891,7 +891,7 @@ export default function CounsellingPage() {
 
         <button onClick={handlePay} disabled={paying || !activeDay || !pickedTime}
           style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: (!activeDay || !pickedTime) ? '#CBD5E1' : PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, cursor: (paying || !activeDay || !pickedTime) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: paying ? 0.7 : 1 }}>
-          {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Processing…</> : `Pay ${selected?.feeAmount ? `₹${selected.feeAmount.toLocaleString()}` : 'Free'} & Confirm`}
+          {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Processing…</> : 'Pay Now'}
         </button>
       </div>
 

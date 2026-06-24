@@ -1,0 +1,282 @@
+:root {
+  --primary-color: #3F41D1;
+  --bg-light: #F7F7F9;
+  --text-main: #212121;
+  --text-muted: #666666;
+  --card-bg: #EBEBFA;
+  --shadow-soft: 0 12px 24px rgba(63, 65, 209, 0.15);
+}
+
+.institute-home-page {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-light);
+  overflow: hidden;
+}
+
+.institute-sidebar {
+  width: 80px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 0;
+  gap: 18px;
+}
+
+.sidebar-logo-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
+}
+
+.institute-home-page .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  flex: 1;
+  align-items: center;
+}
+
+.institute-home-page .sidebar-item {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #363636;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.institute-home-page .sidebar-item:hover {
+  background: #f3f4ff;
+}
+
+.institute-home-page .sidebar-item.active {
+  background: #3F41D1;
+  color: #fff;
+}
+
+.item-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.56);
+  display: grid;
+  place-items: center;
+}
+
+.item-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.institute-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.institute-header {
+  height: 72px;
+  padding: 0 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.icon-button {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.header-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #3f41d1;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #212121;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #666666;
+}
+
+.institute-home-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 28px;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.institute-left-content {
+  flex: 1;
+  max-width: 750px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.main-heading {
+  margin: 0;
+  font-family: "Graphik", sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: #212121;
+}
+
+.subtext {
+  margin: 0;
+  font-size: 16px;
+  color: #666666;
+  line-height: 1.5;
+}
+
+.profile-cta {
+  align-self: start;
+  margin-top: 16px;
+  border: none;
+  color: #fff;
+  background: #3f41d1;
+  border-radius: 100px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(63, 65, 209, 0.2);
+}
+
+.main-illustration {
+  width: 100%;
+  max-width: 580px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.feature-card-panel {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.feature-card-background {
+  background: #ebebfa;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-soft);
+}
+
+.feature-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.feature-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.feature-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.feature-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212121;
+}
+
+.placeholder-page {
+  padding: 36px;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-page h1 {
+  margin: 0;
+  font-size: 40px;
+  color: #3f41d1;
+}
+
+@media (max-width: 1400px) {
+  .institute-home-content {
+    flex-direction: column;
+  }
+
+  .feature-card-panel {
+    width: 100%;
+  }
+}

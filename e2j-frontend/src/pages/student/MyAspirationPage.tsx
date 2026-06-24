@@ -613,7 +613,7 @@ export default function MyAspirationPage() {
 
                 <button onClick={handleExplorePay} disabled={paying}
                   style={{ width: '100%', padding: '14px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 600, cursor: paying ? 'not-allowed' : 'pointer', opacity: paying ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '10px' }}>
-                  {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</> : 'Pay ₹1,178.82 & Start Test'}
+                  {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</> : 'Pay Now'}
                 </button>
                 <button onClick={() => { resetExplore(); setFlowStep('goal'); }}
                   style={{ width: '100%', padding: '11px', borderRadius: '100px', border: `1.5px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '14px', cursor: 'pointer' }}>

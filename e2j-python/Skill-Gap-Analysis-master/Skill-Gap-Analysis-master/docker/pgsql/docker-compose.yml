@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17.7
+    container_name: postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: TlfKhpM1IoeT2ZijtnCygLC2SYkgKT6ETsAANZ41v2vIq72YZVRz4y1oxVXgiOpK
+      TZ: Asia/Kolkata
+      PGTZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+
+    depends_on:
+      - postgres

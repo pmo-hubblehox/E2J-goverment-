@@ -1,0 +1,945 @@
+/* ==========================================
+   GLOBAL PAGE STRUCTURE
+   ========================================== */
+
+.institute-onboarding-page {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f7f7f9;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.institute-onboarding-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ==========================================
+   TOP SECTION - TITLE & SUBTITLE
+   ========================================== */
+
+.institute-onboarding-header {
+  margin-bottom: 24px;
+}
+
+.institute-onboarding-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #212121;
+  margin: 0;
+  padding: 0;
+}
+
+.institute-onboarding-subtitle {
+  font-size: 14px;
+  color: #666666;
+  margin-top: 6px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+/* ==========================================
+   STEPPER
+   ========================================== */
+
+.institute-stepper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 24px;
+}
+
+.institute-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.institute-stepper-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.institute-stepper-circle.active {
+  background-color: #3f41d1;
+  color: white;
+}
+
+.institute-stepper-circle.inactive {
+  background-color: #e0e0e0;
+  color: white;
+}
+
+.stepper-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.stepper-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.institute-stepper-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666666;
+  white-space: nowrap;
+}
+
+.institute-stepper-label.active {
+  color: #3f41d1;
+  font-weight: 500;
+}
+
+.institute-stepper-label.inactive {
+  color: #a3a3a3;
+}
+
+.institute-stepper-connector {
+  flex: 1;
+  height: 2px;
+  background-color: #e0e0e0;
+  margin: 0 12px;
+  min-width: 40px;
+}
+
+/* ==========================================
+   MAIN CARD CONTAINER
+   ========================================== */
+
+.institute-card-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0px 2px 12px rgba(0, 0, 0, 0.08);
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.institute-step-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* ==========================================
+   CONTROLS BAR (TOP RIGHT)
+   ========================================== */
+
+.institute-controls-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.institute-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.institute-search-container {
+  position: relative;
+  width: 280px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #999;
+  pointer-events: none;
+}
+
+.institute-search-input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 8px 16px 8px 40px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.institute-search-input::placeholder {
+  color: #999;
+}
+
+.institute-search-input:focus {
+  border-color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-icon-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.institute-icon-button:hover {
+  border-color: #3f41d1;
+  color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-filter-button {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.institute-filter-button:hover {
+  border-color: #3f41d1;
+  color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-add-button {
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #3f41d1;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.institute-add-button:hover {
+  background-color: #363498;
+  box-shadow: 0px 4px 12px rgba(63, 65, 209, 0.3);
+}
+
+.institute-add-button:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================
+   TABLE WRAPPER & STYLES
+   ========================================== */
+
+.institute-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 24px;
+  flex-grow: 1;
+}
+
+.institute-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.institute-table-header {
+  background-color: #f1f3f5;
+  height: 48px;
+}
+
+.institute-table-header th {
+  padding: 12px 16px;
+  text-align: left;
+  color: #666;
+  font-weight: 600;
+  border: none;
+}
+
+.institute-table-row {
+  height: 56px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.institute-table-row td {
+  padding: 12px 16px;
+  color: #333;
+  font-size: 14px;
+  border: none;
+}
+
+.institute-table-row:hover {
+  background-color: #fafafa;
+}
+
+.institute-table-empty {
+  text-align: center;
+  color: #999;
+  padding: 40px 16px !important;
+  height: auto !important;
+  font-size: 14px;
+}
+
+.institute-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.action-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.action-btn.edit-btn:hover {
+  color: #3f41d1;
+}
+
+.action-btn.delete-btn:hover {
+  color: #f23c42;
+}
+
+/* ==========================================
+   ACTION BAR (BOTTOM)
+   ========================================== */
+
+.institute-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #eeeeee;
+}
+
+.institute-back-button {
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.institute-back-button:hover {
+  border-color: #3f41d1;
+  color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #e0e0e0;
+  color: #999;
+}
+
+.institute-next-button {
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #e8a0aa;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.institute-next-button:hover {
+  background-color: #d98a94;
+  box-shadow: 0px 4px 12px rgba(232, 160, 170, 0.3);
+}
+
+.institute-next-button:active {
+  transform: scale(0.98);
+}
+
+.institute-next-button:disabled {
+  background-color: #d4a5ac;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ==========================================
+   EMPTY STATE (STEP 2)
+   ========================================== */
+
+.institute-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 500px;
+  gap: 16px;
+}
+
+.institute-empty-illustration {
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+}
+
+.institute-empty-text {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  max-width: 400px;
+  margin: 0;
+  padding: 0;
+}
+
+.institute-empty-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.institute-add-students-button {
+  height: auto;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 24px;
+  background-color: #3f41d1;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.institute-add-students-button:hover {
+  background-color: #363498;
+  box-shadow: 0px 4px 12px rgba(63, 65, 209, 0.3);
+}
+
+.institute-add-students-button:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================
+   MODAL
+   ========================================== */
+
+.institute-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.institute-modal {
+  width: 500px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.institute-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.institute-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212121;
+  margin: 0;
+  padding: 0;
+}
+
+.institute-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.institute-modal-close:hover {
+  color: #333;
+}
+
+.institute-modal-content {
+  margin-bottom: 24px;
+}
+
+.institute-modal-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 16px 0;
+  padding: 0;
+}
+
+.institute-error-message {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.institute-success-message {
+  background-color: #d4edda;
+  border: 1px solid #28a745;
+  color: #155724;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.institute-file-upload-area {
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 16px;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.institute-file-upload-area:hover {
+  border-color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-file-label {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.institute-file-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.institute-file-subtext {
+  font-size: 12px;
+  color: #999;
+}
+
+.institute-file-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+}
+
+.institute-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.institute-file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  word-break: break-word;
+}
+
+.institute-file-size {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.institute-file-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.institute-file-delete:hover {
+  color: #f23c42;
+}
+
+.institute-template-link {
+  display: inline-block;
+  font-size: 14px;
+  color: #3f41d1;
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.institute-template-link:hover {
+  text-decoration: underline;
+  color: #363498;
+}
+
+/* ==========================================
+   MODAL ACTIONS
+   ========================================== */
+
+.institute-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.institute-modal-cancel {
+  padding: 8px 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 40px;
+}
+
+.institute-modal-cancel:hover {
+  border-color: #3f41d1;
+  color: #3f41d1;
+  background-color: #f9f9fb;
+}
+
+.institute-modal-submit {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #3f41d1;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 40px;
+}
+
+.institute-modal-submit:hover:not(:disabled) {
+  background-color: #363498;
+  box-shadow: 0px 4px 12px rgba(63, 65, 209, 0.3);
+}
+
+.institute-modal-submit:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.institute-modal-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* ==========================================
+   FORM STYLING
+   ========================================== */
+
+.institute-form-group {
+  margin-bottom: 16px;
+}
+
+.institute-form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #212121;
+  margin-bottom: 8px;
+}
+
+.institute-form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.institute-form-input:focus {
+  outline: none;
+  border-color: #3f41d1;
+  background-color: #f9f9fb;
+  box-shadow: 0px 0px 0px 3px rgba(63, 65, 209, 0.1);
+}
+
+.institute-form-input::placeholder {
+  color: #999;
+}
+
+.institute-form-input[type="text"],
+.institute-form-input[type="email"],
+.institute-form-input[type="tel"],
+.institute-form-input[type="date"],
+.institute-form-input[type="number"],
+.institute-form-input textarea,
+.institute-form-input select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+textarea.institute-form-input {
+  resize: vertical;
+  min-height: 80px;
+  padding: 10px 12px;
+}
+
+select.institute-form-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+  padding-right: 35px;
+}
+
+/* ==========================================
+   FILTER MENU
+   ========================================== */
+
+.institute-filter-container {
+  position: relative;
+}
+
+.institute-filter-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-top: 4px;
+  min-width: 150px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.institute-filter-option {
+  padding: 12px 16px;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.institute-filter-option:hover {
+  background-color: #f0f0f0;
+  color: #3f41d1;
+}
+
+.institute-filter-option:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.institute-filter-option:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+
+@media (max-width: 768px) {
+  .institute-onboarding-page {
+    padding: 16px;
+  }
+
+  .institute-onboarding-title {
+    font-size: 20px;
+  }
+
+  .institute-stepper {
+    gap: 12px;
+  }
+
+  .institute-stepper-connector {
+    min-width: 20px;
+  }
+
+  .institute-controls-bar {
+    flex-wrap: wrap;
+  }
+
+  .institute-search-container {
+    width: 100%;
+  }
+
+  .institute-controls-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .institute-table-wrapper {
+    margin-bottom: 16px;
+  }
+
+  .institute-table-header th {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .institute-table-row td {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .institute-card-container {
+    padding: 16px;
+  }
+
+  .institute-modal {
+    width: 90%;
+    max-width: 500px;
+    padding: 16px;
+  }
+
+  .institute-empty-state {
+    min-height: 400px;
+  }
+
+  .institute-empty-illustration {
+    width: 150px;
+  }
+
+  .institute-empty-text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .institute-onboarding-container {
+    padding: 0;
+  }
+
+  .institute-onboarding-title {
+    font-size: 18px;
+  }
+
+  .institute-stepper {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .institute-stepper-connector {
+    display: none;
+  }
+
+  .institute-stepper-item {
+    flex: 1;
+    min-width: calc(50% - 4px);
+  }
+
+  .institute-controls-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .institute-search-container {
+    width: 100%;
+  }
+
+  .institute-icon-button,
+  .institute-filter-button,
+  .institute-add-button {
+    flex: 1;
+    width: 100%;
+  }
+
+  .institute-modal {
+    width: 95%;
+    padding: 12px;
+  }
+
+  .institute-action-bar {
+    flex-direction: column-reverse;
+  }
+
+  .institute-action-bar button {
+    width: 100%;
+  }
+}
