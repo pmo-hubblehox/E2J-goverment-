@@ -69,8 +69,8 @@ public class StudentController {
                 List<Curriculum> curricula = curriculumRepo.findLatestVersionPerProgram(institute);
                 if (!curricula.isEmpty()) {
                     Curriculum latest = curricula.get(0);
-                    if (latest.getSyllabusJson() != null) {
-                        List<?> semesters = objectMapper.readValue(latest.getSyllabusJson(), List.class);
+                    if (latest.getCurriculumJson() != null) {
+                        List<?> semesters = objectMapper.readValue(latest.getCurriculumJson(), List.class);
                         int subjectIndex = 0;
                         outer:
                         for (Object sem : semesters) {
