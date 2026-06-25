@@ -1030,7 +1030,7 @@ export default function ProfileSetupPage() {
                 {edus.map(e => (
                   <TableRow key={e.id} cells={[e.degree, e.school, e.major, e.year, e.pct]}
                     locked={e.locked}
-                    onEdit={() => { if (!e.locked) setEditingEdu({ ...e }); }}
+                    onEdit={() => { if (!e.locked) setEditingEdu({ ...e, locked: e.locked ?? false }); }}
                     onDelete={async () => {
                       if (e.locked) return;
                       try { await api.delete(`/student/profile/educations/${e.id}`); } catch { /* continue */ }

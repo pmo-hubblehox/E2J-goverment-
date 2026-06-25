@@ -779,7 +779,7 @@ export default function CounsellorOnboardingPage() {
   }, []);
 
   const handlePersonalBlur = useCallback((field: string) => {
-    const value = (personal as Record<string, string>)[field] ?? '';
+    const value = (personal as unknown as Record<string, string>)[field] ?? '';
     const err = validatePersonalField(field, value);
     setPersonalErrors(prev => ({ ...prev, [field]: err }));
   }, [personal, validatePersonalField]);
@@ -788,7 +788,7 @@ export default function CounsellorOnboardingPage() {
     const fields = ['phone', 'house', 'flat', 'pincode', 'stateName', 'city', 'area', 'landmark'];
     const errs: Record<string, string> = {};
     for (const f of fields) {
-      const v = (personal as Record<string, string>)[f] ?? '';
+      const v = (personal as unknown as Record<string, string>)[f] ?? '';
       errs[f] = validatePersonalField(f, v);
     }
     setPersonalErrors(errs);

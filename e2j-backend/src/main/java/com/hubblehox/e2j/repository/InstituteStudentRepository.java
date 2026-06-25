@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface InstituteStudentRepository extends JpaRepository<InstituteStudent, Long> {
     Page<InstituteStudent> findByInstitute(Institute institute, Pageable pageable);
     long countByInstitute(Institute institute);
+    java.util.List<InstituteStudent> findByEmailIgnoreCase(String email);
 }

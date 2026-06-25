@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 # Redis Configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6380")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
     
 # API Configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
