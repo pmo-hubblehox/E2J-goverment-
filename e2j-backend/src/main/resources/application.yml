@@ -1,0 +1,78 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 25MB
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY}
+    max-results: 12
+    cache-ttl-minutes: 60
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000   # 24 hours
+  otp:
+    expiry-minutes: 10
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:3000,http://34.93.167.28:5173}
+
+skill-gap:
+  api-url: ${SKILL_GAP_API_URL:http://localhost:8000}
+
+groq:
+  api:
+    key: ${GROQ_API_KEY}
+
+elevenlabs:
+  api:
+    key: ${ELEVENLABS_API_KEY}
+  voices:
+    english: dveobG1rlBV3LOoiDZTD
+    hindi: d0grukerEzs069eKIauC
+
+logging:
+  level:
+    com.hubblehox.e2j: DEBUG
+    org.springframework.security: INFO
