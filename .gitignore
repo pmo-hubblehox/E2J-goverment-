@@ -33,3 +33,12 @@ __pycache__/
 
 # Uploads (user files — not for repo)
 e2j-backend/src/main/resources/uploads/
+e2j-backend/uploads/
+e2j-python/**/uploads/
+e2j-python/**/E2J App/Backend/uploads/
+
+# Git rewrite artifacts
+.git-rewrite/
+
+# SkillGap service (internal only)
+e2j-backend/src/main/java/com/hubblehox/e2j/service/SkillGapService.java

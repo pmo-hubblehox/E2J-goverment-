@@ -1,9 +1,0 @@
--- =====================================================
--- E2J Seed — Verifier & Head Counsellor accounts
--- =====================================================
--- These accounts are auto-seeded by TestDataInitializer.java on startup.
--- Kept here for reference only.
---
--- Verifier      : verifier@hubblehox.com      / Verifier123@
--- Head Counsellor: headcounsellor@hubblehox.com / HeadCounsellor123@
--- =====================================================
