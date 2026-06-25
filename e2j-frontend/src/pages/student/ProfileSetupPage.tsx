@@ -615,6 +615,9 @@ export default function ProfileSetupPage() {
       if (!pi.firstName.trim()) return 'Please enter your First Name.';
       if (!pi.lastName.trim()) return 'Please enter your Last Name.';
       if (!pi.dob) return 'Please enter your Date of Birth.';
+      const dobYear = new Date(pi.dob).getFullYear();
+      if (dobYear > new Date().getFullYear()) return 'Date of Birth cannot be in the future.';
+      if (dobYear < 1900) return 'Please enter a valid Date of Birth.';
       if (!pi.gender) return 'Please select your Gender.';
       if (!pi.nationality) return 'Please select your Nationality.';
       if (!pi.mobile.trim()) return 'Please enter your Primary Mobile Number.';
@@ -698,8 +701,9 @@ export default function ProfileSetupPage() {
       await saveStep();
       if (step < 4) setStep(s => s + 1);
       else { localStorage.setItem('profileCompleted', '1'); navigate('/student'); }
-    } catch {
-      setValidationError('Failed to save. Please check your connection and try again.');
+    } catch (saveErr: any) {
+      const backendMsg = saveErr?.response?.data?.message;
+      setValidationError(backendMsg ?? 'Failed to save. Please check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -770,7 +774,10 @@ export default function ProfileSetupPage() {
 
             {resumes.map(r => (
               <ResumeRow key={r.id} r={r}
-                onSetPrimary={() => setResumes(p => p.map(x => ({ ...x, primary: x.id === r.id })))}
+                onSetPrimary={async () => {
+                  try { await api.put(`/student/profile/resumes/${r.id}/primary`); } catch { /* best-effort */ }
+                  setResumes(p => p.map(x => ({ ...x, primary: x.id === r.id })));
+                }}
                 onDelete={async () => {
                   try { await api.delete(`/student/profile/resumes/${r.id}`); } catch { /* continue */ }
                   setResumes(p => {
