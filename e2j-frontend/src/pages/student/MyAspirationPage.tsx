@@ -43,9 +43,9 @@ const ROLE_AREAS = [
 const STEP_LABELS         = ['Your Goal', 'Your Profile', 'Role'];
 const EXPLORE_STEP_LABELS = ['Your Goal', 'Payment', 'Psychometric Test', 'Your Report'];
 const GOAL_OPTIONS = [
-  { id: 'career',  icon: <Rocket size={28} color={PRIMARY} />,     title: 'Plan My Career Path',          desc: 'Get a personalised roadmap to your dream role.' },
-  { id: 'skills',  icon: <TrendingUp size={28} color={PRIMARY} />, title: 'Level Up My Skills',            desc: 'Identify and fill skill gaps for your domain.' },
-  { id: 'explore', icon: <Search size={28} color={PRIMARY} />,     title: 'Explore & Discover Interests',  desc: 'Find which career paths suit you best.' },
+  { id: 'career',  icon: <Rocket size={28} color={PRIMARY} />,     title: 'Be Job Ready',             desc: 'Build the skills employers are looking for.' },
+  { id: 'skills',  icon: <TrendingUp size={28} color={PRIMARY} />, title: 'Accelerate My Career',     desc: 'Grow faster with the right skills and career roadmap.' },
+  { id: 'explore', icon: <Search size={28} color={PRIMARY} />,     title: 'Discover Your Strengths',  desc: 'Uncover your strengths and find your ideal career path.' },
 ];
 
 function StepIndicator({ current, labels }: { current: number; labels?: string[] }) {
@@ -94,6 +94,7 @@ export default function MyAspirationPage() {
   const [bgToast, setBgToast]           = useState<{ msg: string; targetRole: string } | null>(null);
   const [savedToast, setSavedToast]     = useState<string | null>(null);
   const bgPollRef                        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isInitialLoad                    = useRef(true);
 
   // wizard state
   const [flowStep, setFlowStep]         = useState<FlowStep>('goal');
@@ -121,7 +122,15 @@ export default function MyAspirationPage() {
   const load = () => {
     setLoading(true);
     api.get('/student/aspirations')
-      .then(r => setAspirations(r.data?.data ?? []))
+      .then(r => {
+        const data = r.data?.data ?? [];
+        setAspirations(data);
+        if (isInitialLoad.current && data.length === 0) {
+          resetWizard();
+          setView('wizard');
+        }
+        isInitialLoad.current = false;
+      })
       .catch(() => setAspirations([]))
       .finally(() => setLoading(false));
   };
@@ -346,8 +355,8 @@ export default function MyAspirationPage() {
         {/* Step 1 — Goal */}
         {flowStep === 'goal' && (
           <div>
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: TEXT, textAlign: 'center', margin: '0 0 6px' }}>What's Your Goal?</h2>
-            <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', margin: '0 0 28px' }}>Select the option that best describes what you want to achieve.</p>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: TEXT, textAlign: 'center', margin: '0 0 6px' }}>Let's Build Your Career Path</h2>
+            <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', margin: '0 0 28px' }}>Choose your goal, and we'll guide you with a personalized roadmap to help you achieve it.</p>
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {GOAL_OPTIONS.map(g => (
                 <button key={g.id} onClick={() => setSelectedGoal(g.id)}
@@ -380,22 +389,127 @@ export default function MyAspirationPage() {
               </div>
             ) : (
               <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
-                {/* Avatar + Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${BORDER}` }}>
+                {/* Name + Email */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: PRIMARY, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: 700, flexShrink: 0 }}>
-                    {(profileData?.name ?? user?.name ?? 'U').charAt(0).toUpperCase()}
+                    {(profileData?.firstName ?? profileData?.name ?? user?.name ?? 'U').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: TEXT }}>{profileData?.name ?? user?.name ?? '—'}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: TEXT }}>
+                      {[profileData?.firstName, profileData?.lastName].filter(Boolean).join(' ') || profileData?.name || user?.name || '—'}
+                    </div>
                     <div style={{ fontSize: '13px', color: SUB, marginTop: '2px' }}>{profileData?.email ?? user?.email ?? '—'}</div>
                   </div>
                 </div>
 
-                {/* Resume — shown first as it's what skill gap uses */}
+                {/* EDUCATION */}
+                {profileData?.educations?.length > 0 && (
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, marginBottom: '8px' }}>Education</div>
+                    {profileData.educations.map((e: any, i: number) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 12px', background: BG, borderRadius: '8px', marginBottom: i < profileData.educations.length - 1 ? '8px' : 0 }}>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>
+                            {e.degree}{e.majorSpecialization ? ` · ${e.majorSpecialization}` : ''}
+                          </div>
+                          <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{e.schoolUniversity}</div>
+                        </div>
+                        <div style={{ fontSize: '12px', color: SUB, textAlign: 'right' as const, flexShrink: 0, marginLeft: '12px' }}>
+                          {e.yearOfPassing && <div>{e.yearOfPassing}</div>}
+                          {e.percentageCgpa && <div>{e.percentageCgpa}%</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* WORK EXPERIENCE */}
+                {(profileData?.experienceCategory || profileData?.workExperiences?.length > 0) && (
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, marginBottom: '8px' }}>Work Experience</div>
+                    {profileData?.experienceCategory && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#EEF2FF', borderRadius: '8px', marginBottom: profileData?.workExperiences?.length > 0 ? '8px' : 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY }}>{profileData.experienceCategory}</span>
+                        {(profileData.totalExpYears != null || profileData.totalExpMonths != null) && (
+                          <span style={{ fontSize: '12px', color: SUB }}>· {profileData.totalExpYears ?? 0} yr {profileData.totalExpMonths ?? 0} mo</span>
+                        )}
+                      </div>
+                    )}
+                    {profileData?.workExperiences?.map((w: any, i: number) => (
+                      <div key={i} style={{ padding: '10px 12px', background: BG, borderRadius: '8px', marginBottom: i < profileData.workExperiences.length - 1 ? '8px' : 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{w.companyName}</div>
+                        <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>
+                          {w.employmentType}{w.location ? ` · ${w.location}` : ''} · {w.fromDate} – {w.toDate ?? 'Present'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* SKILLS */}
+                {profileData?.skills?.length > 0 && (
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, marginBottom: '8px' }}>Skills</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {profileData.skills.map((s: string) => (
+                        <span key={s} style={{ padding: '4px 12px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', fontSize: '12px', fontWeight: 500, border: '1px solid #BBF7D0' }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* PROFESSIONAL LINKS */}
+                {(profileData?.linkedinUrl || profileData?.portfolioUrl || profileData?.websiteUrl) && (
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, marginBottom: '8px' }}>Professional Links</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {profileData.linkedinUrl && (
+                        <a href={profileData.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: '#0A66C2', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                          🔗 LinkedIn
+                        </a>
+                      )}
+                      {profileData.portfolioUrl && (
+                        <a href={profileData.portfolioUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: PRIMARY, fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                          🔗 Portfolio
+                        </a>
+                      )}
+                      {profileData.websiteUrl && (
+                        <a href={profileData.websiteUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                          🔗 Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* PERSONAL DETAILS */}
+                {(profileData?.mobilePrimary || profileData?.dob || profileData?.gender || profileData?.nationality) && (
+                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, marginBottom: '8px' }}>Personal Details</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      {[
+                        { label: 'Phone', value: profileData?.mobilePrimary },
+                        { label: 'Date of Birth', value: profileData?.dob },
+                        { label: 'Gender', value: profileData?.gender },
+                        { label: 'Nationality', value: profileData?.nationality },
+                      ].filter(f => f.value).map(f => (
+                        <div key={f.label} style={{ background: BG, borderRadius: '8px', padding: '10px 14px' }}>
+                          <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '3px' }}>{f.label}</div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{f.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* RESUME — at the bottom */}
                 {(() => {
                   const resumes: any[] = profileData?.resumes ?? [];
                   if (!resumes.length) return (
-                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#991B1B', marginBottom: '2px' }}>No resume uploaded</div>
                         <div style={{ fontSize: '12px', color: '#B91C1C' }}>Upload a resume on your profile page — it will be used for skill gap analysis.</div>
@@ -405,7 +519,7 @@ export default function MyAspirationPage() {
                   );
                   const primary = resumes.find((r: any) => r.isPrimary) ?? resumes[0];
                   return (
-                    <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+                    <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '10px', padding: '14px 16px' }}>
                       <div style={{ fontSize: '11px', color: '#15803D', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>Resume for Skill Gap Analysis</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -424,89 +538,6 @@ export default function MyAspirationPage() {
                     </div>
                   );
                 })()}
-
-                {/* Personal Info */}
-                {(() => {
-                  const fields = [
-                    { label: 'Phone', value: profileData?.mobilePrimary },
-                    { label: 'Date of Birth', value: profileData?.dob },
-                    { label: 'Gender', value: profileData?.gender },
-                    { label: 'Nationality', value: profileData?.nationality },
-                    { label: 'City', value: profileData?.presentAddress?.city },
-                    { label: 'State', value: profileData?.presentAddress?.state },
-                    { label: 'Experience', value: profileData?.experienceCategory },
-                    { label: 'Exp. Years', value: profileData?.totalExpYears != null ? `${profileData.totalExpYears}y ${profileData.totalExpMonths ?? 0}m` : null },
-                    { label: 'LinkedIn', value: profileData?.linkedinUrl },
-                    { label: 'Portfolio', value: profileData?.portfolioUrl },
-                  ].filter(f => f.value);
-                  if (!fields.length) return null;
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-                      {fields.map(f => (
-                        <div key={f.label} style={{ background: BG, borderRadius: '8px', padding: '10px 14px' }}>
-                          <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '3px' }}>{f.label}</div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{f.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-
-                {/* Education */}
-                {profileData?.educations?.length > 0 && (
-                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
-                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>Education</div>
-                    {profileData.educations.map((e: any, i: number) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', padding: '10px 12px', background: BG, borderRadius: '8px' }}>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{e.degree}</div>
-                          <div style={{ fontSize: '12px', color: SUB }}>{e.schoolUniversity} {e.majorSpecialization ? `· ${e.majorSpecialization}` : ''}</div>
-                        </div>
-                        <div style={{ fontSize: '12px', color: SUB, textAlign: 'right' as const, flexShrink: 0 }}>
-                          {e.yearOfPassing && <div>{e.yearOfPassing}</div>}
-                          {e.percentageCgpa && <div>{e.percentageCgpa}%</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Work Experience */}
-                {profileData?.workExperiences?.length > 0 && (
-                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
-                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>Work Experience</div>
-                    {profileData.workExperiences.map((w: any, i: number) => (
-                      <div key={i} style={{ padding: '10px 12px', background: BG, borderRadius: '8px', marginBottom: '8px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{w.companyName}</div>
-                        <div style={{ fontSize: '12px', color: SUB }}>{w.employmentType} {w.location ? `· ${w.location}` : ''} · {w.fromDate} – {w.toDate ?? 'Present'}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Certifications */}
-                {profileData?.certifications?.length > 0 && (
-                  <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
-                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>Certifications</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {profileData.certifications.map((c: any, i: number) => (
-                        <span key={i} style={{ padding: '4px 12px', borderRadius: '100px', background: '#EEF2FF', color: PRIMARY, fontSize: '12px', fontWeight: 500, border: `1px solid #C7D2FE` }}>{c.certificationName}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Skills */}
-                {profileData?.skills?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>Skills</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {profileData.skills.map((s: string) => (
-                        <span key={s} style={{ padding: '4px 12px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', fontSize: '12px', fontWeight: 500, border: '1px solid #BBF7D0' }}>{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -1170,24 +1201,6 @@ export default function MyAspirationPage() {
           </>
         )}
       </div>
-    </div>
-  );
-
-  /* ─── EMPTY STATE ─── */
-  if (aspirations.length === 0) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', padding: '24px' }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ fontSize: '80px', marginBottom: '24px' }}>🎓</div>
-      <h2 style={{ fontSize: '20px', fontWeight: 700, color: TEXT, maxWidth: '480px', lineHeight: 1.4, margin: '0 0 12px' }}>
-        Discover Your Strengths, Identify Your Skill Gaps, And Get Ready For Your Dream Career.
-      </h2>
-      <p style={{ fontSize: '13px', color: SUB, maxWidth: '380px', marginBottom: '28px' }}>
-        Set your career aspirations and we'll create a personalised roadmap just for you.
-      </p>
-      <button onClick={() => { resetWizard(); setView('wizard'); }}
-        style={{ background: PRIMARY, color: '#fff', border: 'none', borderRadius: '24px', padding: '12px 32px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        Let's Get Started <ChevronRight size={16} />
-      </button>
     </div>
   );
 

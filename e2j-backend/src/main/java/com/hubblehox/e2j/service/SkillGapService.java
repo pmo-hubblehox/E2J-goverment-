@@ -71,12 +71,24 @@ public class SkillGapService {
                 ResponseEntity<byte[]> fileResp = restTemplate.getForEntity(resolvedResumeUrl, byte[].class);
                 resumeBytes = fileResp.getBody();
             } else {
-                // local file — resolve relative URL to disk path
-                // /api/files/student/x/resume/f.pdf → uploads/student/x/resume/f.pdf
-                String relativePath = resolvedResumeUrl
+                // Resolve relative URL → absolute disk path via the upload directory.
+                // Strip /api/files/ or /files/ prefix to get the bare relative path,
+                // then join with the configured upload directory.
+                String stripped = resolvedResumeUrl
                         .replaceFirst("^/api/files/", "")
                         .replaceFirst("^/files/", "");
-                resumeBytes = Files.readAllBytes(Paths.get(uploadDir, relativePath.split("/")));
+                // Split on both / and \ to be safe on Windows
+                String[] parts = stripped.split("[/\\\\]");
+                java.nio.file.Path filePath = Paths.get(uploadDir).toAbsolutePath();
+                for (String part : parts) {
+                    if (!part.isEmpty()) filePath = filePath.resolve(part);
+                }
+                if (!Files.exists(filePath)) {
+                    throw new AppException(
+                        "Resume file not found on server. Please re-upload your resume in your profile.",
+                        HttpStatus.NOT_FOUND);
+                }
+                resumeBytes = Files.readAllBytes(filePath);
             }
             if (resumeBytes == null || resumeBytes.length == 0) {
                 throw new AppException("Could not read resume file.", HttpStatus.BAD_REQUEST);
@@ -84,7 +96,7 @@ public class SkillGapService {
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            throw new AppException("Failed to fetch resume: " + e.getMessage(), HttpStatus.BAD_GATEWAY);
+            throw new AppException("Failed to read resume: " + e.getMessage(), HttpStatus.BAD_GATEWAY);
         }
 
         HttpHeaders headers = new HttpHeaders();

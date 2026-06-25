@@ -18,7 +18,7 @@
     <description>HubbleHox E2J Backend - Education to Jobs Platform</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
     </properties>
 
     <dependencies>
