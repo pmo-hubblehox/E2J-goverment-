@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { X, UserCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
-import AspirationBanner from '../../components/AspirationBanner';
 
 const BORDER  = '#E2E8F0';
 const TEXT    = '#1E293B';
@@ -116,32 +115,36 @@ export default function HomePage() {
       {/* New user profile completion popup */}
       {showProfileModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: '20px', padding: '40px 36px', maxWidth: '440px', width: '90%', textAlign: 'center', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div style={{ background: '#fff', borderRadius: '20px', padding: '40px 40px', maxWidth: '520px', width: '92%', textAlign: 'center', position: 'relative', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <button
               onClick={() => setShowProfileModal(false)}
               style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}
             >
               <X size={18} />
             </button>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <UserCircle size={36} color="#4F46E5" strokeWidth={1.5} />
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#1E293B', margin: '0 0 6px' }}>Welcome!</h2>
+            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 4px' }}>Your career journey starts here.</p>
+            <p style={{ fontSize: '13px', color: '#94A3B8', margin: '0 0 20px' }}>Complete your profile in just 2 minutes to unlock</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', margin: '0 0 20px', textAlign: 'left' }}>
+              <span style={{ fontSize: '13px', color: '#334155' }}>🎯 Personalized Career Roadmap</span>
+              <span style={{ fontSize: '13px', color: '#334155' }}>✨ AI-Identified Skill Gaps</span>
+              <span style={{ fontSize: '13px', color: '#334155' }}>📚 AI-Powered Learning Path</span>
+              <span style={{ fontSize: '13px', color: '#334155' }}>⚡ Earn 100 Credit Points</span>
+              <span style={{ fontSize: '13px', color: '#334155' }}>🔥 Start Your Daily Streak</span>
             </div>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1E293B', margin: '0 0 8px' }}>Complete Your Profile</h2>
-            <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.6, margin: '0 0 24px' }}>
-              Your profile is incomplete. Fill in your personal details, education, and experience to unlock job recommendations and aspiration tracking.
-            </p>
+            <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '0 0 20px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
                 onClick={() => { setShowProfileModal(false); navigate('/student/profile'); }}
-                style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)', border: 'none', borderRadius: '24px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '13px 24px', background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', border: 'none', borderRadius: '24px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
               >
-                Complete Profile Now
+                Start My Career Journey
               </button>
               <button
                 onClick={() => setShowProfileModal(false)}
-                style={{ padding: '10px 24px', background: 'none', border: '1.5px solid #E2E8F0', borderRadius: '24px', color: '#64748B', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                style={{ padding: '8px 24px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '13px', fontWeight: 400, cursor: 'pointer', textDecoration: 'underline' }}
               >
-                Remind Me Later
+                Skip for Now
               </button>
             </div>
           </div>

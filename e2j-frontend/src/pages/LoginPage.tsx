@@ -122,11 +122,6 @@ export default function LoginPage() {
         <img src="/logo-full.png.png" alt="HubbleHox" style={{ height: '52px', objectFit: 'contain' }} />
       </div>
 
-      {/* Quote */}
-      <p style={{ textAlign: 'center', fontSize: '13px', fontStyle: 'italic', color: '#64748B', margin: '0 0 20px', lineHeight: '1.6' }}>
-        "The future of work is changing, and education must change with it" — Bill Gates
-      </p>
-
       {/* Title — H6: 20px / 500 / capitalize */}
       <h2 style={{ fontSize: '20px', fontWeight: 500, color: '#212121', margin: '0 0 24px', textTransform: 'capitalize' }}>
         {titleText}
