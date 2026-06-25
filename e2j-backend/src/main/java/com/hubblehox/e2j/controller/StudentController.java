@@ -1,26 +1,20 @@
 package com.hubblehox.e2j.controller;
 
 import com.hubblehox.e2j.dto.ApiResponse;
-import com.hubblehox.e2j.entity.Course;
-import com.hubblehox.e2j.entity.Student;
-import com.hubblehox.e2j.entity.StudentAspiration;
-import com.hubblehox.e2j.entity.User;
+import com.hubblehox.e2j.entity.*;
 import com.hubblehox.e2j.exception.AppException;
-import com.hubblehox.e2j.repository.CourseRepository;
-import com.hubblehox.e2j.repository.StudentAspirationRepository;
-import com.hubblehox.e2j.repository.StudentRepository;
+import com.hubblehox.e2j.repository.*;
 import com.hubblehox.e2j.service.CourseRecommendationService;
 import com.hubblehox.e2j.service.InterviewService;
 import com.hubblehox.e2j.service.YouTubeCourseService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,10 +28,90 @@ public class StudentController {
     private final YouTubeCourseService youTubeCourseService;
     private final InterviewService interviewService;
     private final StudentAspirationRepository aspirationRepo;
+    private final JobApplicationRepository jobApplicationRepo;
+    private final CurriculumRepository curriculumRepo;
+    private final InstituteStudentRepository instituteStudentRepo;
+    private final ObjectMapper objectMapper;
 
     private Student getStudent(User user) {
         return studentRepo.findByUser(user)
                 .orElseThrow(() -> new AppException("Student profile not found", HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboard(@AuthenticationPrincipal User user) {
+        Student student = getStudent(user);
+        List<JobApplication> applications = jobApplicationRepo.findByStudentOrderByAppliedAtDesc(student);
+
+        long jobsApplied        = applications.stream().filter(a -> a.getJobPosting() != null && a.getJobPosting().getPostingType() == JobPosting.PostingType.JOB).count();
+        long internshipsApplied = applications.stream().filter(a -> a.getJobPosting() != null && a.getJobPosting().getPostingType() == JobPosting.PostingType.INTERNSHIP).count();
+        long offered            = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.OFFERED).count();
+        long shortlisted        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.SHORTLISTED || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_1 || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_2).count();
+        long interviewed        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_1 || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_2).count();
+
+        List<Map<String, Object>> recentApps = applications.stream().limit(5).map(a -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", a.getId());
+            m.put("company", a.getJobPosting() != null && a.getJobPosting().getPartner() != null ? a.getJobPosting().getPartner().getRegisteredName() : "");
+            m.put("role", a.getJobPosting() != null ? a.getJobPosting().getJobRole() : "");
+            m.put("appliedAt", a.getAppliedAt() != null ? a.getAppliedAt().toLocalDate().toString() : "");
+            m.put("stage", a.getStage() != null ? a.getStage().name() : "APPLIED");
+            return m;
+        }).collect(Collectors.toList());
+
+        // Curriculum subjects from latest approved curriculum for student's institute
+        List<Map<String, Object>> subjects = new ArrayList<>();
+        try {
+            // Find the student's institute record to get institute
+            List<InstituteStudent> instStudents = instituteStudentRepo.findByEmailIgnoreCase(user.getEmail());
+            if (!instStudents.isEmpty()) {
+                Institute institute = instStudents.get(0).getInstitute();
+                List<Curriculum> curricula = curriculumRepo.findLatestVersionPerProgram(institute);
+                if (!curricula.isEmpty()) {
+                    Curriculum latest = curricula.get(0);
+                    if (latest.getSyllabusJson() != null) {
+                        List<?> semesters = objectMapper.readValue(latest.getSyllabusJson(), List.class);
+                        int subjectIndex = 0;
+                        outer:
+                        for (Object sem : semesters) {
+                            Map<?, ?> semMap = (Map<?, ?>) sem;
+                            List<?> subList = (List<?>) semMap.get("subjects");
+                            if (subList == null) continue;
+                            for (Object sub : subList) {
+                                Map<?, ?> subMap = (Map<?, ?>) sub;
+                                Map<String, Object> s = new LinkedHashMap<>();
+                                s.put("code", subMap.get("code"));
+                                s.put("name", subMap.get("name"));
+                                s.put("credits", subMap.get("credits"));
+                                s.put("semester", semMap.get("name"));
+                                List<?> modules = (List<?>) subMap.get("modules");
+                                int totalModules = modules != null ? modules.size() : 0;
+                                s.put("totalModules", totalModules);
+                                subjects.add(s);
+                                subjectIndex++;
+                                if (subjectIndex >= 6) break outer;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("jobsApplied",        jobsApplied);
+        data.put("internshipsApplied", internshipsApplied);
+        data.put("offered",            offered);
+        data.put("shortlisted",        shortlisted);
+        data.put("interviewed",        interviewed);
+        data.put("recentApplications", recentApps);
+        data.put("placementFunnel",    List.of(
+            Map.of("stage", "Applied",     "count", jobsApplied + internshipsApplied),
+            Map.of("stage", "Shortlisted", "count", shortlisted),
+            Map.of("stage", "Interviewed", "count", interviewed),
+            Map.of("stage", "Offered",     "count", offered)
+        ));
+        data.put("curriculumSubjects", subjects);
+        return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
     @GetMapping("/profile")

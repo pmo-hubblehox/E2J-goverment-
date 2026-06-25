@@ -130,28 +130,58 @@ function FileF({ label, required, full, instituteName, docType, value, onChange 
 }
 
 // ─── Step 1: Institute Information ─────────────────────────────────────────────
-function StepInstituteInfo({ instituteName, entityId, onSave }: { instituteName: string; entityId: string; onSave: (data: any) => Promise<void> }) {
-  const [name, setName]               = useState(instituteName);
-  const [type, setType]               = useState('');
-  const [website, setWebsite]         = useState('');
-  const [building, setBuilding]       = useState('');
-  const [room, setRoom]               = useState('');
-  const [country, setCountry]         = useState('India');
-  const [pincode, setPincode]         = useState('');
-  const [state, setState]             = useState('');
-  const [city, setCity]               = useState('');
-  const [area, setArea]               = useState('');
-  const [landmark, setLandmark]       = useState('');
-  const [locationPin, setLocationPin] = useState('');
-  const [contacts, setContacts]       = useState([{ name: '', email: '', phone: '' }]);
-  const [accBody, setAccBody]         = useState('');
-  const [accCertUrl, setAccCertUrl]   = useState('');
-  const [uniCertUrl, setUniCertUrl]   = useState('');
-  const [ratingUrl, setRatingUrl]     = useState('');
-  const [ugcUrl, setUgcUrl]           = useState('');
-  const [mouUrl, setMouUrl]           = useState('');
+function StepInstituteInfo({ instituteName, entityId, onSave, prefill }: { instituteName: string; entityId: string; onSave: (data: any) => Promise<void>; prefill?: any }) {
+  const [name, setName]               = useState(prefill?.name || instituteName);
+  const [type, setType]               = useState(prefill?.type || '');
+  const [website, setWebsite]         = useState(prefill?.websiteUrl || '');
+  const [building, setBuilding]       = useState(prefill?.buildingName || '');
+  const [room, setRoom]               = useState(prefill?.roomFloor || '');
+  const [country, setCountry]         = useState(prefill?.country || 'India');
+  const [pincode, setPincode]         = useState(prefill?.pincode || '');
+  const [state, setState]             = useState(prefill?.state || '');
+  const [city, setCity]               = useState(prefill?.city || '');
+  const [area, setArea]               = useState(prefill?.area || '');
+  const [landmark, setLandmark]       = useState(prefill?.landmark || '');
+  const [locationPin, setLocationPin] = useState(prefill?.locationPin || '');
+  const [contacts, setContacts]       = useState<{name:string;email:string;phone:string}[]>(() => {
+    try { const p = prefill?.contactsJson; if (p) { const arr = typeof p === 'string' ? JSON.parse(p) : p; if (arr?.length) return arr; } } catch {}
+    return [{ name: '', email: '', phone: '' }];
+  });
+  const [accBody, setAccBody]         = useState(prefill?.accreditationBody || '');
+  const [accCertUrl, setAccCertUrl]   = useState(prefill?.accreditationCertUrl || '');
+  const [uniCertUrl, setUniCertUrl]   = useState(prefill?.universityCertUrl || '');
+  const [ratingUrl, setRatingUrl]     = useState(prefill?.ratingDocUrl || '');
+  const [ugcUrl, setUgcUrl]           = useState(prefill?.ugcCertUrl || '');
+  const [mouUrl, setMouUrl]           = useState(prefill?.mouUrl || '');
   const [saving, setSaving]           = useState(false);
   const [errors, setErrors]           = useState<Record<string, string>>({});
+
+  // populate fields when prefill data arrives from API
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.name)                 setName(prefill.name);
+    if (prefill.type)                 setType(prefill.type);
+    if (prefill.websiteUrl)           setWebsite(prefill.websiteUrl);
+    if (prefill.buildingName)         setBuilding(prefill.buildingName);
+    if (prefill.roomFloor)            setRoom(prefill.roomFloor);
+    if (prefill.country)              setCountry(prefill.country);
+    if (prefill.pincode)              setPincode(prefill.pincode);
+    if (prefill.state)                setState(prefill.state);
+    if (prefill.city)                 setCity(prefill.city);
+    if (prefill.area)                 setArea(prefill.area);
+    if (prefill.landmark)             setLandmark(prefill.landmark);
+    if (prefill.locationPin)          setLocationPin(prefill.locationPin);
+    if (prefill.accreditationBody)    setAccBody(prefill.accreditationBody);
+    if (prefill.accreditationCertUrl) setAccCertUrl(prefill.accreditationCertUrl);
+    if (prefill.universityCertUrl)    setUniCertUrl(prefill.universityCertUrl);
+    if (prefill.ratingDocUrl)         setRatingUrl(prefill.ratingDocUrl);
+    if (prefill.ugcCertUrl)           setUgcUrl(prefill.ugcCertUrl);
+    if (prefill.mouUrl)               setMouUrl(prefill.mouUrl);
+    try {
+      const p = prefill.contactsJson;
+      if (p) { const arr = typeof p === 'string' ? JSON.parse(p) : p; if (arr?.length) setContacts(arr); }
+    } catch {}
+  }, [prefill]);
 
   const instName  = entityId;
   const cityOpts  = state ? ['', ...(STATE_CITIES[state] ?? [])] : [''];
@@ -321,21 +351,30 @@ function StepInstituteInfo({ instituteName, entityId, onSave }: { instituteName:
 }
 
 // ─── Step 2: Services ──────────────────────────────────────────────────────────
-function StepServices({ total, setTotal, onSave }: { total: number; setTotal: (n: number) => void; onSave: (data: any) => Promise<void> }) {
-  const [skillGap, setSkillGap]       = useState(false);
-  const [shareFaculty, setShareFaculty] = useState(true);
-  const [shareInfra, setShareInfra]   = useState(true);
-  const [saving, setSaving]           = useState(false);
-  const [error, setError]             = useState('');
+function StepServices({ total, setTotal, onSave, prefill }: { total: number; setTotal: (n: number) => void; onSave: (data: any) => Promise<void>; prefill?: any }) {
+  const [skillGap, setSkillGap] = useState(() => {
+    const avail: string[] = prefill?.servicesAvail ?? [];
+    return avail.includes('Education to Job') || avail.includes('Student Skill Gap');
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  useEffect(() => {
+    setTotal(skillGap ? 9000 : 0);
+  }, [skillGap]);
+
+  // populate when prefill data arrives from API
+  useEffect(() => {
+    if (!prefill) return;
+    const avail: string[] = prefill.servicesAvail ?? [];
+    setSkillGap(avail.includes('Education to Job') || avail.includes('Student Skill Gap'));
+  }, [prefill]);
 
   const handleNext = async () => {
     setSaving(true); setError('');
     try {
-      const avail = skillGap ? ['Student Skill Gap'] : [];
-      const offer: string[] = [];
-      if (shareFaculty) offer.push('Share Faculty For Tutoring Courses');
-      if (shareInfra)   offer.push('Share Infrastructure For Tutoring Courses');
-      await onSave({ servicesAvail: avail, servicesOffer: offer });
+      const avail = skillGap ? ['Education to Job'] : [];
+      await onSave({ servicesAvail: avail, servicesOffer: [] });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Failed to save.');
       setSaving(false);
@@ -351,32 +390,12 @@ function StepServices({ total, setTotal, onSave }: { total: number; setTotal: (n
         </div>
         <div style={{ border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: TEXT, fontWeight: 500 }}>
-            <input type="checkbox" checked={skillGap} onChange={e => { setSkillGap(e.target.checked); setTotal(e.target.checked ? 9000 : 0); }}
+            <input type="checkbox" checked={skillGap} onChange={e => setSkillGap(e.target.checked)}
               style={{ width: '16px', height: '16px', accentColor: PRIMARY }} />
-            Student Skill Gap
+            Education to Job
           </label>
           <span style={{ fontSize: '14px', color: SUB, fontWeight: 500 }}>₹ 9,000</span>
         </div>
-      </div>
-
-      <div style={sectionBox}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
-          <span style={sectionTitle}>Services To Offer</span>
-          <Info size={14} color="#94A3B8" />
-        </div>
-        {[
-          { label: 'Share Faculty For Tutoring Courses', val: shareFaculty, set: setShareFaculty },
-          { label: 'Share Infrastructure For Tutoring Courses', val: shareInfra, set: setShareInfra },
-        ].map(s => (
-          <div key={s.label} style={{ border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: TEXT, fontWeight: 500 }}>
-              <input type="checkbox" checked={s.val} onChange={e => s.set(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: PRIMARY }} />
-              {s.label}
-            </label>
-            <span style={{ fontSize: '14px', color: SUB, fontWeight: 500 }}>₹ 0</span>
-          </div>
-        ))}
       </div>
 
       <div style={{ ...sectionBox, background: BG, border: `1px solid #C7D2FE` }}>
@@ -439,7 +458,7 @@ function StepPayments({ total, onPay }: { total: number; onPay: (data: any) => P
                   <>
                     <tr>
                       <td style={{ padding: '10px 12px' }}>1</td>
-                      <td style={{ padding: '10px 12px', fontWeight: 500 }}>Student Skill Gap</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 500 }}>Education to Job</td>
                       <td style={{ padding: '10px 12px' }}>₹{total.toLocaleString()}</td>
                       <td style={{ padding: '10px 12px' }}>1</td>
                       <td style={{ padding: '10px 12px' }}>Number</td>
@@ -512,12 +531,19 @@ export default function InstituteOnboardingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [entityId, setEntityId] = useState('institute');
+  const [prefillData, setPrefillData] = useState<any>(null);
 
-  // fetch canonical name from DB on mount so the upload folder is always consistent
+  // fetch profile on mount — prefills step 1 & 2 if user returns to edit
   useEffect(() => {
     api.get('/institute/profile').then(r => {
-      const savedName: string = r.data?.data?.name ?? '';
+      const data = r.data?.data;
+      if (!data) return;
+      setPrefillData(data);
+      const savedName: string = data.name ?? '';
       if (savedName) setEntityId(savedName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, ''));
+      const avail: string[] = data.servicesAvail ?? [];
+      const hasService = avail.includes('Education to Job') || avail.includes('Student Skill Gap');
+      setTotal(hasService ? 9000 : 0);
     }).catch(() => {});
   }, []);
 
@@ -574,8 +600,8 @@ export default function InstituteOnboardingPage() {
           })}
         </div>
 
-        <div style={{ display: step === 0 ? 'block' : 'none' }}><StepInstituteInfo instituteName={instName} entityId={entityId} onSave={saveInfo} /></div>
-        <div style={{ display: step === 1 ? 'block' : 'none' }}><StepServices total={total} setTotal={setTotal} onSave={saveServices} /></div>
+        <div style={{ display: step === 0 ? 'block' : 'none' }}><StepInstituteInfo instituteName={instName} entityId={entityId} onSave={saveInfo} prefill={prefillData} /></div>
+        <div style={{ display: step === 1 ? 'block' : 'none' }}><StepServices total={total} setTotal={setTotal} onSave={saveServices} prefill={prefillData} /></div>
         <div style={{ display: step === 2 ? 'block' : 'none' }}><StepPayments total={total} onPay={savePayment} /></div>
       </div>
 

@@ -1346,7 +1346,7 @@ export default function CurriculumPage() {
               <Search size={12} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
               <input placeholder="Search" style={{ padding: '7px 10px 7px 26px', border: `1px solid ${BORDER}`, borderRadius: '20px', fontSize: '12px', outline: 'none', width: '160px' }} />
             </div>
-            <button onClick={handleGenAI} disabled={isGenerating}
+            <button onClick={handleGenAI} disabled={isGenerating} title="Based on Industry Demand"
               style={{ border: 'none', borderRadius: '20px', background: isGenerating ? '#A5B4FC' : PRIMARY, color: '#fff', padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: isGenerating ? 'not-allowed' : 'pointer' }}>
               {isGenerating ? 'Generating…' : 'Generate AI Recommended Curriculum'}
             </button>
@@ -1503,6 +1503,7 @@ export default function CurriculumPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
