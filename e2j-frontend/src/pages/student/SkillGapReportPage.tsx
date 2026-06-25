@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // @ts-ignore
-import ForceGraph2D from 'react-force-graph-2d';
+import ForceGraph2DRaw from 'react-force-graph-2d';
+const ForceGraph2D = ForceGraph2DRaw as any;
 // @ts-ignore
 import { forceCollide } from 'd3-force';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -139,7 +140,7 @@ function NetworkGraph({ clusterMap, courseSkillSet }: {
         <button style={{ ...btnStyle(), fontSize: '11px', fontWeight: 600 }} onClick={() => graphRef.current?.zoomToFit(300, 60)}>FIT</button>
       </div>
       <ForceGraph2D
-        ref={graphRef}
+        ref={graphRef as any}
         width={dims.w}
         height={dims.h}
         graphData={graphData}

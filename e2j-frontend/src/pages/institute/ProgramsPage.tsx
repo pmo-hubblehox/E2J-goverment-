@@ -422,7 +422,7 @@ export default function ProgramsPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ degree: '', name: '', duration: '', intakeCapacity: '', totalFees: '', majors: [] });
+    setForm({ degree: '', name: '', duration: '', intakeCapacity: '', totalFees: '', majors: [] as string[], academicYear: '' });
     setBrochure(null);
     setSaveError('');
     setSavedProgram(null);
