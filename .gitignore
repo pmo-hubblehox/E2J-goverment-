@@ -26,7 +26,7 @@ __pycache__/
 # Env / secrets
 .env
 *.env.local
-e2j-backend/src/main/resources/application.yml
+
 
 # Compiled Java
 *.class
