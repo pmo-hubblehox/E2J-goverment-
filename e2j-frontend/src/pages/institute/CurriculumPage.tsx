@@ -525,9 +525,32 @@ function RecommendedView({ current, ai, onBack, onSendApproval }: {
     const pairs: SubPair[] = [];
     const usedAiCodes = new Set<string>();
     for (const cs of currSem?.subjects ?? []) {
+      // 1. exact code match
       let matched = aiSem?.subjects.find(a => a.code === cs.code);
+      // 2. exact normalised name match
       if (!matched) matched = aiSem?.subjects.find(a => norm(a.name) === norm(cs.name));
-      pairs.push({ key: cs.code, currSub: cs, aiSub: matched });
+      // 3. one name contains the other (handles "Physics-I" vs "Physics I" vs "PhysicsI")
+      if (!matched) matched = aiSem?.subjects.find(a =>
+        norm(a.name).includes(norm(cs.name)) || norm(cs.name).includes(norm(a.name))
+      );
+      // 4. word-overlap fallback (majority of significant words match)
+      if (!matched) {
+        const csWords = norm(cs.name).split('').filter((_,i,a) => a.length > 2);
+        matched = aiSem?.subjects.find(a => {
+          const aWords = norm(a.name);
+          const csW    = norm(cs.name);
+          if (csW.length < 4 || aWords.length < 4) return false;
+          let common = 0;
+          for (let i = 0; i < Math.min(csW.length, aWords.length); i++) if (csW[i] === aWords[i]) common++;
+          return common / Math.max(csW.length, aWords.length) > 0.6;
+        });
+      }
+      // If still no match, synthesise an aiSub from currSub so the subject is shown as "unchanged"
+      const effectiveAiSub: SyllabusSubject | undefined = matched ?? {
+        ...cs,
+        modules: cs.modules.map(m => ({ ...m, changed: false, removed: false })),
+      };
+      pairs.push({ key: cs.code, currSub: cs, aiSub: effectiveAiSub });
       if (matched) usedAiCodes.add(matched.code);
     }
     for (const as of aiSem?.subjects ?? []) {
