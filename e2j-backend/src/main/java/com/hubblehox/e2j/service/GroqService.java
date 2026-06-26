@@ -28,11 +28,15 @@ public class GroqService {
     public record Message(String role, String content) {}
 
     public String chat(List<Message> messages) {
+        return chat(messages, 1024);
+    }
+
+    public String chat(List<Message> messages, int maxTokens) {
         try {
             ObjectNode body = mapper.createObjectNode();
             body.put("model", MODEL);
             body.put("temperature", 0.7);
-            body.put("max_tokens", 1024);
+            body.put("max_tokens", maxTokens);
 
             ArrayNode msgs = body.putArray("messages");
             for (Message m : messages) {

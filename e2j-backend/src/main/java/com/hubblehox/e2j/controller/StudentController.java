@@ -156,6 +156,18 @@ public class StudentController {
         return ResponseEntity.ok(ApiResponse.ok(aspirationRepo.save(asp), "Aspiration saved"));
     }
 
+    /** Update aspiration roleArea (e.g. after psychometric report reveals top career match) */
+    @PatchMapping("/aspiration/{id}")
+    public ResponseEntity<ApiResponse<StudentAspiration>> updateAspiration(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        StudentAspiration asp = aspirationRepo.findByIdAndStudent(id, getStudent(user))
+                .orElseThrow(() -> new AppException("Aspiration not found", HttpStatus.NOT_FOUND));
+        if (body.containsKey("roleArea")) asp.setRoleArea((String) body.get("roleArea"));
+        return ResponseEntity.ok(ApiResponse.ok(aspirationRepo.save(asp), "Updated"));
+    }
+
     /** Delete an aspiration */
     @DeleteMapping("/aspirations/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteAspiration(

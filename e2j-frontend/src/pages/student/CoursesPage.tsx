@@ -99,12 +99,16 @@ function extractSkillGapCourses(reportJson: string, targetRole: string): SkillGa
   }
 }
 
+
 export default function CoursesPage() {
   const location = useLocation();
-  const [initialRole] = useState<string>(() => (location.state as { searchRole?: string } | null)?.searchRole ?? '');
+  const locationState = location.state as { searchRole?: string; fromPsychometric?: boolean } | null;
+  const [initialRole] = useState<string>(() => locationState?.searchRole ?? '');
+  const [fromPsychometric] = useState<boolean>(() => locationState?.fromPsychometric ?? false);
   const consumedInitialRole = useRef(false);
-  const [tab, setTab] = useState<Tab>('all');
-  const [search, setSearch] = useState(initialRole);
+  const [tab, setTab] = useState<Tab>(() => fromPsychometric ? 'recommended' : 'all');
+  // Don't pre-fill search when coming from psychometric — it would filter out skill gap fallback courses
+  const [search, setSearch] = useState(() => fromPsychometric ? '' : initialRole);
   const [ytVideos, setYtVideos] = useState<YTVideo[]>([]);
   const [sgCourses, setSgCourses] = useState<SkillGapCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +134,6 @@ export default function CoursesPage() {
           .finally(() => setLoading(false));
       }
     } else if (tab === 'recommended') {
-      // Recommended = courses from skill gap reports for ACTIVE aspirations only
       Promise.all([
         api.get('/student/skill-gap/reports'),
         api.get('/student/aspirations'),
@@ -138,14 +141,10 @@ export default function CoursesPage() {
         .then(async ([reportsRes, aspirationsRes]) => {
           const reports: { id: number; targetRole: string }[] = reportsRes.data?.data ?? [];
           const aspirations: { roleArea: string; goal: string }[] = aspirationsRes.data?.data ?? [];
-          // Only keep roles that still have an active non-explore aspiration
           const activeRoles = new Set(
-            aspirations
-              .filter(a => a.goal !== 'explore')
-              .map(a => a.roleArea)
+            aspirations.filter(a => a.goal !== 'explore').map(a => a.roleArea)
           );
           const activeReports = reports.filter(rp => activeRoles.has(rp.targetRole));
-          if (activeReports.length === 0) { setSgCourses([]); return; }
           const all: SkillGapCourse[] = [];
           await Promise.all(activeReports.slice(0, 5).map(async rp => {
             try {
@@ -154,9 +153,26 @@ export default function CoursesPage() {
               if (json) all.push(...extractSkillGapCourses(json, rp.targetRole));
             } catch { /* skip */ }
           }));
-          // deduplicate by URL
           const seen = new Set<string>();
-          setSgCourses(all.filter(c => { if (seen.has(c.url)) return false; seen.add(c.url); return true; }));
+          const deduped = all.filter(c => { if (seen.has(c.url)) return false; seen.add(c.url); return true; });
+
+          // If coming from psychometric report, also load Groq courses for that role
+          if (fromPsychometric && initialRole && !consumedInitialRole.current) {
+            consumedInitialRole.current = true;
+            try {
+              const r = await api.get('/student/skill-gap/psychometric-courses', { params: { role: initialRole } });
+              const psychData: { title: string; url: string; platform: string; type: string }[] = r.data?.data ?? [];
+              const psychCourses: SkillGapCourse[] = psychData.map(c => ({
+                name: c.title, url: c.url,
+                cluster: c.type === 'Free' ? 'Free Course' : 'Paid Course',
+                targetRole: initialRole, origin: c.platform,
+              }));
+              deduped.push(...psychCourses.filter(c => !seen.has(c.url)));
+              if (psychCourses.length > 0) setAspirationFilter(initialRole);
+            } catch { /* Groq failed — show skill gap courses only */ }
+          }
+
+          setSgCourses(deduped);
         })
         .catch(() => setSgCourses([]))
         .finally(() => setLoading(false));
@@ -190,6 +206,7 @@ export default function CoursesPage() {
     return matchRole && matchSearch;
   });
 
+
   return (
     <div style={{ padding: '24px', minHeight: '100%' }}>
 
@@ -199,7 +216,9 @@ export default function CoursesPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#1E293B', margin: 0 }}>Courses</h1>
         <span style={{ fontSize: '12px', color: '#64748B' }}>
-          {tab === 'recommended' ? `${filteredSG.length} course${filteredSG.length !== 1 ? 's' : ''} found` : `${filteredYT.length} video${filteredYT.length !== 1 ? 's' : ''} found`}
+          {tab === 'recommended'
+            ? `${filteredSG.length} course${filteredSG.length !== 1 ? 's' : ''} found`
+            : `${filteredYT.length} video${filteredYT.length !== 1 ? 's' : ''} found`}
         </span>
       </div>
 
@@ -273,7 +292,7 @@ export default function CoursesPage() {
             </div>
           </div>
 
-          {/* Aspiration filter pills */}
+          {/* Aspiration filter pills — includes psychometric role pill automatically */}
           {aspirationRoles.length > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
               <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Filter by aspiration:</span>
@@ -301,7 +320,6 @@ export default function CoursesPage() {
         </div>
 
       ) : tab === 'recommended' ? (
-        /* ── Skill Gap courses grid ── */
         filteredSG.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '64px 0', textAlign: 'center' }}>
             <Zap size={44} color="#CBD5E1" strokeWidth={1.2} />

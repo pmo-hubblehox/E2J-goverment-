@@ -8,6 +8,7 @@ import com.hubblehox.e2j.entity.User;
 import com.hubblehox.e2j.service.GroqService;
 import com.hubblehox.e2j.service.SkillGapService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/student/skill-gap")
 @RequiredArgsConstructor
@@ -73,6 +75,44 @@ public class SkillGapController {
             @AuthenticationPrincipal User user,
             @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(skillGapService.getReportById(user, id)));
+    }
+
+    @GetMapping("/psychometric-courses")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getPsychometricCourses(
+            @RequestParam String role) throws Exception {
+        log.info("[PsychCourses] Fetching courses for role={}", role);
+
+        String prompt = String.format("""
+                You are a learning path expert. For someone pursuing a career as a "%s", recommend 8 high-quality courses.
+                Mix free and paid. Include Coursera, YouTube, edX, Udemy, and similar platforms.
+
+                Return ONLY this JSON — no explanation, no markdown:
+                {
+                  "courses": [
+                    {"title": "Course Title", "url": "https://...", "platform": "Coursera", "type": "Free", "description": "One line about what you learn"},
+                    ...
+                  ]
+                }
+                """, role);
+
+        String raw = groqService.chat(List.of(
+                new GroqService.Message("system", "You are a learning path expert. Always respond in valid JSON only."),
+                new GroqService.Message("user", prompt)
+        ), 2048);
+
+        log.info("[PsychCourses] Groq raw response length={}", raw != null ? raw.length() : 0);
+        JsonNode root = objectMapper.readTree(raw);
+        List<Map<String, Object>> courses = new ArrayList<>();
+        root.path("courses").forEach(c -> courses.add(Map.of(
+                "title",       c.path("title").asText(),
+                "url",         c.path("url").asText(),
+                "platform",    c.path("platform").asText(),
+                "type",        c.path("type").asText(),
+                "description", c.path("description").asText()
+        )));
+        log.info("[PsychCourses] Returning {} courses for role={}", courses.size(), role);
+
+        return ResponseEntity.ok(ApiResponse.ok(courses));
     }
 
     @GetMapping("/trending-roles")
