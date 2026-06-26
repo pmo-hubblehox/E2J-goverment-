@@ -193,18 +193,6 @@ export default function LoginPage() {
           {isSubmitting ? 'Signing In…' : 'Sign In'}
         </button>
 
-        {/* Sign up link — hidden for internal roles */}
-        {!isVerifier && !isHeadCounsellor && !isBos && (
-          <p style={{ textAlign: 'center', fontSize: '14px', color: '#666666', margin: 0 }}>
-            Don't Have An Account?{' '}
-            <Link
-              to={isInstitute ? '/register/institute' : isCounsellor ? '/register/counsellor' : isIndustry ? '/register/industry' : '/register'}
-              style={{ color: '#3F41D1', fontWeight: 500, textDecoration: 'none', textTransform: 'capitalize' }}
-            >
-              Sign Up
-            </Link>
-          </p>
-        )}
       </form>
     </div>
   );
