@@ -263,6 +263,16 @@ public class PsychometricService {
         m.put("counsellorComment", r.getCounsellorComment());
         m.put("counsellorName", r.getCounsellorName());
         m.put("commentedAt", r.getCommentedAt());
+        m.put("feedbackKeyObservations", r.getFeedbackKeyObservations());
+        m.put("feedbackActionItems", r.getFeedbackActionItems());
+        m.put("feedbackResourcesRecommended", r.getFeedbackResourcesRecommended());
+        try {
+            m.put("feedbackRatings",  r.getFeedbackRatingsJson()  != null ? objectMapper.readValue(r.getFeedbackRatingsJson(),  Map.class) : null);
+            m.put("feedbackOutcomes", r.getFeedbackOutcomesJson() != null ? objectMapper.readValue(r.getFeedbackOutcomesJson(), Map.class) : null);
+        } catch (Exception e) {
+            m.put("feedbackRatings", null);
+            m.put("feedbackOutcomes", null);
+        }
         try {
             m.put("scores", objectMapper.readValue(r.getScoresJson(), Map.class));
             m.put("recommendedPaths", objectMapper.readValue(r.getRecommendedPathsJson(), List.class));

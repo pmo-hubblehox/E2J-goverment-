@@ -401,60 +401,58 @@ public class CounsellorController {
     public ResponseEntity<ApiResponse<String>> sendReportComment(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, Object> body) {
 
         Counsellor c = get(user);
         StudentBooking booking = bookingRepo.findById(id)
                 .filter(b -> b.getCounsellor().getId().equals(c.getId()))
                 .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
 
-        String comment     = body.getOrDefault("comment", "").strip();
-        String studentEmail = body.getOrDefault("studentEmail", booking.getStudent().getUser().getEmail());
-        String studentName  = body.getOrDefault("studentName", booking.getStudent().getUser().getName());
+        String comment               = body.getOrDefault("comment", "").toString().strip();
+        String keyObservations       = body.getOrDefault("keyObservations", "").toString().strip();
+        String actionItems           = body.getOrDefault("actionItems", "").toString().strip();
+        String resourcesRecommended  = body.getOrDefault("resourcesRecommended", "").toString().strip();
+        String studentEmail          = booking.getStudent().getUser().getEmail();
+        String studentName           = booking.getStudent().getUser().getName();
 
-        if (comment.isBlank()) throw new AppException("Comment cannot be empty", HttpStatus.BAD_REQUEST);
-
-        // Build report summary for email body
         PsychometricReport report = psychometricReportRepo
                 .findTopByStudentOrderByCreatedAtDesc(booking.getStudent())
                 .orElse(null);
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Dear ").append(studentName).append(",\n\n");
-        sb.append("Your counsellor ").append(c.getUser().getName())
-          .append(" has reviewed your psychometric report and shared the following feedback:\n\n");
-        sb.append("---\n").append(comment).append("\n---\n\n");
-
         if (report != null) {
-            sb.append("📊 Your Assessment Summary:\n");
-            sb.append("  • Strongest Interest : ").append(report.getTopInterests()).append("\n");
-            sb.append("  • Top Career Match   : ").append(report.getTopCareerMatch()).append("\n");
-            sb.append("  • Overall Score      : ").append(report.getTotalScore()).append("\n\n");
-        }
-
-        sb.append("Session Date : ").append(booking.getSessionDate()).append("  ").append(booking.getSessionTime()).append("\n\n");
-        sb.append("Log in to the E2J platform to view your full report and next steps.\n\n");
-        sb.append("Regards,\nHubbleHox E2J Team");
-
-        // Persist comment on the psychometric report
-        if (report != null) {
-            report.setCounsellorComment(comment);
+            if (!comment.isBlank())              report.setCounsellorComment(comment);
+            if (!keyObservations.isBlank())      report.setFeedbackKeyObservations(keyObservations);
+            if (!actionItems.isBlank())          report.setFeedbackActionItems(actionItems);
+            if (!resourcesRecommended.isBlank()) report.setFeedbackResourcesRecommended(resourcesRecommended);
             report.setCounsellorName(c.getUser().getName());
             report.setCommentedAt(java.time.LocalDateTime.now());
+
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                if (body.containsKey("ratings"))  report.setFeedbackRatingsJson(om.writeValueAsString(body.get("ratings")));
+                if (body.containsKey("outcomes")) report.setFeedbackOutcomesJson(om.writeValueAsString(body.get("outcomes")));
+            } catch (Exception ignored) {}
+
             psychometricReportRepo.save(report);
         }
 
         try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Dear ").append(studentName).append(",\n\n");
+            sb.append("Your counsellor ").append(c.getUser().getName())
+              .append(" has reviewed your psychometric report and shared the following feedback:\n\n");
+            if (!comment.isBlank()) sb.append("Review:\n").append(comment).append("\n\n");
+            if (!keyObservations.isBlank()) sb.append("Key Observations:\n").append(keyObservations).append("\n\n");
+            if (!actionItems.isBlank()) sb.append("Your Action Items:\n").append(actionItems).append("\n\n");
+            sb.append("Log in to the E2J platform to view your full report.\n\nRegards,\nHubbleHox E2J Team");
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setTo(studentEmail);
-            msg.setSubject("Your Psychometric Report — Counsellor Feedback from " + c.getUser().getName());
+            msg.setSubject("Your Career Report — Counsellor Feedback from " + c.getUser().getName());
             msg.setText(sb.toString());
             mailSender.send(msg);
-        } catch (Exception ignored) {
-            // email failure should not block saving the comment
-        }
+        } catch (Exception ignored) {}
 
-        return ResponseEntity.ok(ApiResponse.ok("Comment saved" + (report != null ? " and email sent to " + studentEmail : "")));
+        return ResponseEntity.ok(ApiResponse.ok("Feedback saved"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

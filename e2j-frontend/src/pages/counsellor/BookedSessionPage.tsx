@@ -36,89 +36,256 @@ interface StudentBooking {
     scores: Record<string, number>;
     recommendedPaths: string[];
     createdAt: string;
+    feedbackKeyObservations?: string;
+    feedbackActionItems?: string;
+    feedbackResourcesRecommended?: string;
+    counsellorComment?: string;
   };
   questionnaire?: Record<string, string>;
 }
 
-// ── Psychometric Report Modal ─────────────────────────────────────────────────
-function PsychometricReportModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
-  const BORDER = '#E2E8F0';
-  const TEXT   = '#1E293B';
-  const SUB    = '#64748B';
+// ── Combined Report Modal (3 tabs) ───────────────────────────────────────────
+function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
+  const TEXT = '#1E293B', SUB = '#64748B', BORDER = '#E2E8F0', PRIMARY = '#4F46E5';
+  const [activeTab, setActiveTab] = useState<'questionnaire' | 'psychometric' | 'feedback'>('questionnaire');
+
+  // Feedback form state
+  const [ratings, setRatings]     = useState({ sessionQuality: 0, engagement: 0, goalClarity: 0, receptiveness: 0 });
+  const [outcomes, setOutcomes]   = useState({ understoodProfile: '', actionPlan: '', resources: '', nextSteps: '' });
+  const [keyObs, setKeyObs]       = useState('');
+  const [actionItems, setActionItems] = useState<{ text: string }[]>([]);
+  const [newActionItem, setNewActionItem] = useState('');
+  const [resourcesList, setResourcesList] = useState<{ title: string; url: string }[]>([]);
+  const [newResTitle, setNewResTitle] = useState('');
+  const [newResUrl, setNewResUrl]   = useState('');
+  const [comment, setComment]     = useState('');
+  const [saving, setSaving]       = useState(false);
+
+  const alreadySaved = !!(booking.psychometricReport?.feedbackKeyObservations || booking.psychometricReport?.feedbackActionItems || booking.psychometricReport?.counsellorComment);
+
+  const LIKERT_OPTS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+  const STAR_LABELS = ['', 'Poor', 'Below Average', 'Average', 'Good', 'Excellent'];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.post(`/counsellor/bookings/${booking.id}/report-comment`, {
+        comment, keyObservations: keyObs,
+        actionItems: JSON.stringify(actionItems),
+        resourcesRecommended: JSON.stringify(resourcesList),
+        ratings, outcomes,
+        studentEmail: booking.studentEmail, studentName: booking.studentName,
+      });
+      onClose();
+    } catch { /* ignore */ } finally { setSaving(false); }
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '1100px', maxHeight: '92vh', overflowY: 'auto', padding: '28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+      <div style={{ background: '#fff', borderRadius: '18px', width: '100%', maxWidth: '960px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.18)' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ padding: '22px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: TEXT }}>Psychometric Assessment Report</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: SUB }}>
-              {booking.studentName} · {booking.studentEmail}
-            </p>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: TEXT }}>Report</div>
+            <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}>{booking.studentName} · {booking.studentEmail}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB, marginLeft: '16px' }}><X size={20} /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB }}><X size={20} /></button>
         </div>
 
-        {/* Questionnaire Answers */}
-        {booking.questionnaire && Object.values(booking.questionnaire).some(v => v) && (
-          <div style={{ marginBottom: '24px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '16px 20px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400E', marginBottom: '10px' }}>Pre-Session Questionnaire</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.entries(booking.questionnaire).filter(([, v]) => v).map(([q, a]) => (
-                <div key={q}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#B45309', marginBottom: '2px' }}>{q}</div>
-                  <div style={{ fontSize: '13px', color: '#78350F' }}>{a}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Full Report — same as student sees */}
-        <PsychometricReportView
-          report={{
-            ...booking.psychometricReport!,
-            counsellorComment: undefined,
-          }}
-          bookingId={booking.id}
-          isCounsellor={true}
-        />
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <button onClick={onClose} style={{ padding: '10px 24px', border: `1px solid ${BORDER}`, borderRadius: '24px', background: '#fff', fontSize: '13px', color: SUB, cursor: 'pointer' }}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuestionnaireModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
-  const TEXT = '#1E293B', BORDER = '#E2E8F0', SUB = '#64748B';
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto', padding: '32px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-          <div>
-            <div style={{ fontSize: '17px', fontWeight: 700, color: TEXT }}>{booking.studentName}</div>
-            <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{booking.studentEmail}</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB, fontSize: '20px', lineHeight: 1 }}>✕</button>
-        </div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '12px' }}>Pre-Session Questionnaire</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {Object.entries(booking.questionnaire ?? {}).filter(([, v]) => v).map(([q, a]) => (
-            <div key={q} style={{ background: '#F8FAFC', borderRadius: '8px', padding: '12px 14px', border: `1px solid ${BORDER}` }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>{q}</div>
-              <div style={{ fontSize: '13px', color: TEXT }}>{a}</div>
-            </div>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '4px', padding: '16px 28px 0', borderBottom: `2px solid ${BORDER}`, flexShrink: 0 }}>
+          {([
+            { key: 'questionnaire', label: '📋 Questionnaire', show: !!(booking.questionnaire && Object.values(booking.questionnaire).some(v => v)) },
+            { key: 'psychometric',  label: '🧠 Psychometric Report', show: !!booking.psychometricReport },
+            { key: 'feedback',      label: '💬 Counsellor Feedback', show: true },
+          ] as const).filter(t => t.show).map(t => (
+            <button key={t.key} onClick={() => setActiveTab(t.key)}
+              style={{ padding: '10px 18px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer', borderBottom: `2px solid ${activeTab === t.key ? PRIMARY : 'transparent'}`, marginBottom: '-2px', background: activeTab === t.key ? '#F8F9FF' : 'transparent', color: activeTab === t.key ? PRIMARY : SUB, borderRadius: '8px 8px 0 0' }}>
+              {t.label}
+            </button>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <button onClick={onClose} style={{ padding: '10px 24px', border: `1px solid ${BORDER}`, borderRadius: '24px', background: '#fff', fontSize: '13px', color: SUB, cursor: 'pointer' }}>Close</button>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 28px' }}>
+
+          {/* TAB 1 — Questionnaire */}
+          {activeTab === 'questionnaire' && (
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '14px', padding: '20px 22px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400E', marginBottom: '16px' }}>📋 Pre-Session Questionnaire</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                {Object.entries(booking.questionnaire ?? {}).filter(([, v]) => v).map(([q, a], i, arr) => (
+                  <div key={q} style={{ paddingBottom: i < arr.length - 1 ? '14px' : 0, marginBottom: i < arr.length - 1 ? '14px' : 0, borderBottom: i < arr.length - 1 ? '1px solid #FEF3C7' : 'none' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#B45309', marginBottom: '4px' }}>{q}</div>
+                    <div style={{ fontSize: '13px', color: '#1E293B', lineHeight: 1.7 }}>{a}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2 — Psychometric */}
+          {activeTab === 'psychometric' && booking.psychometricReport && (
+            <PsychometricReportView
+              report={{ ...booking.psychometricReport, counsellorComment: undefined }}
+            />
+          )}
+
+          {/* TAB 3 — Counsellor Feedback */}
+          {activeTab === 'feedback' && (
+            <div>
+              {alreadySaved && (
+                <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '22px' }}>🔒</span>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#92400E' }}>Feedback already submitted</div>
+                    <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>Counsellor feedback cannot be edited once saved.</div>
+                  </div>
+                </div>
+              )}
+              {!alreadySaved && (<div>
+
+              {/* Block 1: Star Ratings */}
+              <div style={{ background: '#FAFBFF', border: `1px solid #E8ECF8`, borderRadius: '14px', padding: '20px 22px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>⭐</div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>Session Quality Ratings</div>
+                    <div style={{ fontSize: '11px', color: SUB }}>Rate the student on each dimension (1 = Poor, 5 = Excellent)</div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  {([
+                    { key: 'sessionQuality',  label: 'Overall Session Quality' },
+                    { key: 'engagement',      label: 'Student Engagement & Participation' },
+                    { key: 'goalClarity',     label: "Clarity of Student's Career Goals" },
+                    { key: 'receptiveness',   label: 'Receptiveness to Guidance' },
+                  ] as const).map(({ key, label }) => (
+                    <div key={key} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '14px 16px' }}>
+                      <div style={{ fontSize: '12px', color: SUB, fontWeight: 500, marginBottom: '10px' }}>{label}</div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1,2,3,4,5].map(n => (
+                          <span key={n} onClick={() => setRatings(r => ({ ...r, [key]: n }))}
+                            style={{ fontSize: '22px', cursor: 'pointer', color: n <= ratings[key] ? '#FCD34D' : '#E2E8F0' }}>★</span>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '11px', color: SUB, marginTop: '5px' }}>
+                        {ratings[key] > 0 ? `${ratings[key]} / 5 — ${STAR_LABELS[ratings[key]]}` : 'Not rated'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Block 2: Outcomes */}
+              <div style={{ background: '#FAFBFF', border: `1px solid #E8ECF8`, borderRadius: '14px', padding: '20px 22px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>✅</div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>Session Outcomes</div>
+                    <div style={{ fontSize: '11px', color: SUB }}>How well did this session achieve each goal?</div>
+                  </div>
+                </div>
+                {([
+                  { key: 'understoodProfile', q: 'Student understood their psychometric profile and what it means for their career' },
+                  { key: 'actionPlan',        q: 'A clear, actionable career plan was established by end of session' },
+                  { key: 'resources',         q: 'Student was referred to additional learning resources or support' },
+                  { key: 'nextSteps',         q: 'Student left with clear next steps and knew what to do after the session' },
+                ] as const).map(({ key, q }) => (
+                  <div key={key} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '13px', color: '#374151', fontWeight: 500, marginBottom: '10px' }}>{q}</div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' as const }}>
+                      {LIKERT_OPTS.map(opt => (
+                        <button key={opt} onClick={() => setOutcomes(o => ({ ...o, [key]: opt }))}
+                          style={{ padding: '5px 12px', borderRadius: '8px', border: `1.5px solid ${outcomes[key] === opt ? PRIMARY : BORDER}`, background: outcomes[key] === opt ? '#EEF2FF' : '#fff', color: outcomes[key] === opt ? PRIMARY : SUB, fontSize: '12px', fontWeight: outcomes[key] === opt ? 700 : 500, cursor: 'pointer' }}>
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Block 3: Written Notes */}
+              <div style={{ background: '#FAFBFF', border: `1px solid #E8ECF8`, borderRadius: '14px', padding: '20px 22px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+                  <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>📝</div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>Written Notes</div>
+                    <div style={{ fontSize: '11px', color: SUB }}>Visible to student on their report page</div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Key Observations & Takeaways <span style={{ color: '#DC2626' }}>*</span></div>
+                    <textarea value={keyObs} onChange={e => setKeyObs(e.target.value)} placeholder="What did you observe about the student? Key insights..."
+                      style={{ width: '100%', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '11px 14px', fontSize: '13px', color: TEXT, resize: 'vertical', outline: 'none', fontFamily: 'inherit', minHeight: '80px' }} />
+                  </div>
+                  {/* Action Items — checklist */}
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>Action Items — <span style={{ color: PRIMARY, fontWeight: 500 }}>tickable checklist</span></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                      {actionItems.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8FAFC', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '8px 10px' }}>
+                          <span style={{ fontSize: '15px' }}>☐</span>
+                          <span style={{ flex: 1, fontSize: '13px', color: TEXT }}>{item.text}</span>
+                          <button onClick={() => setActionItems(a => a.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '16px', lineHeight: 1 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input value={newActionItem} onChange={e => setNewActionItem(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && newActionItem.trim()) { setActionItems(a => [...a, { text: newActionItem.trim() }]); setNewActionItem(''); } }}
+                        placeholder="Type an action item and press Enter..."
+                        style={{ flex: 1, border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '8px 12px', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }} />
+                      <button onClick={() => { if (newActionItem.trim()) { setActionItems(a => [...a, { text: newActionItem.trim() }]); setNewActionItem(''); } }}
+                        style={{ padding: '8px 14px', background: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>+ Add</button>
+                    </div>
+                  </div>
+
+                  {/* Resources — hyperlinks */}
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>Resources — <span style={{ color: PRIMARY, fontWeight: 500 }}>tappable links</span></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                      {resourcesList.map((res, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F8FAFC', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '8px 10px' }}>
+                          <ExternalLink size={13} color={PRIMARY} style={{ flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{res.title}</div>
+                            <div style={{ fontSize: '11px', color: SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{res.url}</div>
+                          </div>
+                          <button onClick={() => setResourcesList(r => r.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '16px', lineHeight: 1 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <input value={newResTitle} onChange={e => setNewResTitle(e.target.value)} placeholder="Link title (e.g. Coursera ML Specialisation)"
+                        style={{ border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '8px 12px', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }} />
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input value={newResUrl} onChange={e => setNewResUrl(e.target.value)} placeholder="https://..."
+                          style={{ flex: 1, border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '8px 12px', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }} />
+                        <button onClick={() => { if (newResTitle.trim() && newResUrl.trim()) { setResourcesList(r => [...r, { title: newResTitle.trim(), url: newResUrl.trim() }]); setNewResTitle(''); setNewResUrl(''); } }}
+                          style={{ padding: '8px 14px', background: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>+ Add</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Overall Review <span style={{ color: '#DC2626' }}>*</span></div>
+                    <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="A brief overall review — this is shown prominently to the student..."
+                      style={{ width: '100%', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '11px 14px', fontSize: '13px', color: TEXT, resize: 'vertical', outline: 'none', fontFamily: 'inherit', minHeight: '70px' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save */}
+              <button onClick={handleSave} disabled={saving || (!comment && !keyObs)}
+                style={{ width: '100%', padding: '14px', background: saving ? '#A5B4FC' : PRIMARY, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                {saving ? 'Saving...' : '💾  Save Feedback'}
+              </button>
+            </div>)}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -388,7 +555,6 @@ export default function BookedSessionPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingSession, setEditingSession] = useState<AvailSession | null>(null);
   const [viewingReport, setViewingReport] = useState<StudentBooking | null>(null);
-  const [viewingQuestionnaire, setViewingQuestionnaire] = useState<StudentBooking | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [sessions, setSessions] = useState<AvailSession[]>([]);
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
@@ -509,16 +675,10 @@ export default function BookedSessionPage() {
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {b.psychometricReport && (
+                        {(b.psychometricReport || (b.questionnaire && Object.values(b.questionnaire).some(v => v))) && (
                           <button onClick={() => setViewingReport(b)}
                             style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#EEF2FF', border: 'none', borderRadius: '6px', color: '#3F41D1', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            <FileText size={11} /> Psych Report
-                          </button>
-                        )}
-                        {b.questionnaire && Object.values(b.questionnaire).some(v => v) && (
-                          <button onClick={() => setViewingQuestionnaire(b)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#F0FDF4', border: 'none', borderRadius: '6px', color: '#16A34A', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            <FileText size={11} /> Questionnaire
+                            <FileText size={11} /> Report
                           </button>
                         )}
                       </div>
@@ -673,8 +833,7 @@ export default function BookedSessionPage() {
       )}
 
       {showModal && <AddAvailabilityModal onClose={() => setShowModal(false)} onSaved={reload} />}
-      {viewingReport && <PsychometricReportModal booking={viewingReport} onClose={() => setViewingReport(null)} />}
-      {viewingQuestionnaire && <QuestionnaireModal booking={viewingQuestionnaire} onClose={() => setViewingQuestionnaire(null)} />}
+      {viewingReport && <ReportModal booking={viewingReport} onClose={() => setViewingReport(null)} />}
       {editingSession && (
         <EditAvailabilityModal
           session={editingSession}

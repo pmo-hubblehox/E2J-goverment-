@@ -118,6 +118,7 @@ export default function MyAspirationPage() {
   const [submittingTest, setSubmittingTest] = useState(false);
   const [psychReport, setPsychReport]   = useState<any>(null);
   const [savedAspirationId, setSavedAspirationId] = useState<number | null>(null);
+  const [reportTab, setReportTab]       = useState<'psychometric' | 'feedback'>('psychometric');
 
   const load = () => {
     setLoading(true);
@@ -897,8 +898,94 @@ export default function MyAspirationPage() {
               const top1Color  = CATEGORY_COLORS[top1Cat] ?? CATEGORY_COLORS['I'];
               const top2Color  = CATEGORY_COLORS[top2Cat] ?? CATEGORY_COLORS['R'];
 
+              const hasCounsellorFeedback = !!(psychReport.feedbackKeyObservations || psychReport.feedbackActionItems || psychReport.feedbackResourcesRecommended);
+
               return (
                 <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 8px' }}>
+
+                  {/* Tab switcher — only shown when counsellor feedback exists */}
+                  {hasCounsellorFeedback && (
+                    <div style={{ display: 'flex', gap: '4px', borderBottom: `2px solid ${BORDER}`, marginBottom: '24px' }}>
+                      {([
+                        { key: 'psychometric', label: '🧠 Psychometric Report' },
+                        { key: 'feedback',     label: '💬 Counsellor Feedback' },
+                      ] as const).map(t => (
+                        <button key={t.key} onClick={() => setReportTab(t.key)}
+                          style={{ padding: '10px 20px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer', borderBottom: `2px solid ${reportTab === t.key ? PRIMARY : 'transparent'}`, marginBottom: '-2px', background: reportTab === t.key ? '#EEF2FF' : 'transparent', color: reportTab === t.key ? PRIMARY : SUB, borderRadius: '8px 8px 0 0' }}>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Counsellor Feedback Tab */}
+                  {hasCounsellorFeedback && reportTab === 'feedback' && (() => {
+                    // Parse action items and resources from JSON
+                    let parsedActions: { text: string; checked: boolean }[] = [];
+                    let parsedResources: { title: string; url: string }[] = [];
+                    try { parsedActions = (JSON.parse(psychReport.feedbackActionItems || '[]') as { text: string }[]).map(a => ({ ...a, checked: false })); } catch { parsedActions = []; }
+                    try { parsedResources = JSON.parse(psychReport.feedbackResourcesRecommended || '[]'); } catch { parsedResources = []; }
+                    return (
+                    <div>
+                      {/* Identity banner */}
+                      <div style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #7C3AED 100%)`, borderRadius: '16px', padding: '22px 24px', marginBottom: '20px', color: '#fff', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>👩‍💼</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '16px', fontWeight: 700 }}>{psychReport.counsellorName ?? 'Your Counsellor'}</div>
+                          <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '3px' }}>
+                            Career Counsellor{psychReport.commentedAt ? ` · Session on ${new Date(psychReport.commentedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Key Observations */}
+                      {psychReport.feedbackKeyObservations && (
+                        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '14px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase' as const, letterSpacing: '.5px', marginBottom: '10px' }}>🔍 Key Observations</div>
+                          <p style={{ fontSize: '13px', color: TEXT, lineHeight: 1.8, margin: 0 }}>{psychReport.feedbackKeyObservations}</p>
+                        </div>
+                      )}
+
+                      {/* Action Items + Resources side by side */}
+                      {(parsedActions.length > 0 || parsedResources.length > 0) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                          {parsedActions.length > 0 && (
+                            <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase' as const, letterSpacing: '.5px', marginBottom: '12px' }}>✅ Action Items — <span style={{ color: PRIMARY }}>tickable checklist</span></div>
+                              {parsedActions.map((item, i) => (
+                                <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px', cursor: 'pointer' }}>
+                                  <input type="checkbox" defaultChecked={false} style={{ marginTop: '2px', accentColor: PRIMARY, width: '16px', height: '16px', flexShrink: 0 }} />
+                                  <span style={{ fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>{item.text}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {parsedResources.length > 0 && (
+                            <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase' as const, letterSpacing: '.5px', marginBottom: '12px' }}>📚 Resources — <span style={{ color: PRIMARY }}>tappable links</span></div>
+                              {parsedResources.map((res, i) => (
+                                <a key={i} href={res.url} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${BORDER}`, marginBottom: '8px', textDecoration: 'none', background: '#FAFBFF' }}>
+                                  <span style={{ fontSize: '16px', flexShrink: 0 }}>🔗</span>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{res.title}</div>
+                                    <div style={{ fontSize: '11px', color: SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{res.url}</div>
+                                  </div>
+                                  <span style={{ fontSize: '12px', color: SUB }}>↗</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                    );
+                  })()}
+
+                  {/* Psychometric Report — shown when no tabs or psychometric tab active */}
+                  {(!hasCounsellorFeedback || reportTab === 'psychometric') && (
+                  <div>
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
@@ -1037,21 +1124,6 @@ export default function MyAspirationPage() {
                     </p>
                   </div>
 
-                  {/* Counsellor Comment — if one exists */}
-                  {psychReport.counsellorComment && (
-                    <div style={{ background: '#EEF2FF', border: `1.5px solid #C7D2FE`, borderRadius: '16px', padding: '22px', marginBottom: '20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>💬</div>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT }}>Counsellor Review</div>
-                          <div style={{ fontSize: '11px', color: SUB }}>
-                            {psychReport.counsellorName ?? 'Your counsellor'}{psychReport.commentedAt ? ` · ${new Date(psychReport.commentedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
-                          </div>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: '13px', color: '#1E3A8A', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{psychReport.counsellorComment}</p>
-                    </div>
-                  )}
 
                   {/* Explore Courses CTA */}
                   <div style={{ background: '#EEF2FF', border: `1px solid #C7D2FE`, borderRadius: '16px', padding: '22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
@@ -1076,6 +1148,8 @@ export default function MyAspirationPage() {
                       Book a Session <ChevronRight size={14} />
                     </button>
                   </div>
+                  </div>
+                  )}
                 </div>
               );
             })()}
@@ -1263,13 +1337,6 @@ export default function MyAspirationPage() {
                   Taken on {detailPsychReport.createdAt ? new Date(detailPsychReport.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                 </div>
 
-                {/* Counsellor comment preview */}
-                {detailPsychReport.counsellorComment && (
-                  <div style={{ marginTop: '14px', background: '#EEF2FF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #C7D2FE' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', marginBottom: '6px' }}>💬 Counsellor Review — {detailPsychReport.counsellorName ?? ''}</div>
-                    <p style={{ fontSize: '12px', color: '#1E3A8A', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{detailPsychReport.counsellorComment}</p>
-                  </div>
-                )}
               </div>
             )}
           </div>

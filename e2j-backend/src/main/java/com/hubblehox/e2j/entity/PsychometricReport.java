@@ -39,7 +39,7 @@ public class PsychometricReport {
     /** Total score out of 150 */
     private Integer totalScore;
 
-    /** Counsellor review comment visible to the student */
+    /** Counsellor overall review comment visible to the student */
     @Column(columnDefinition = "TEXT")
     private String counsellorComment;
 
@@ -48,6 +48,26 @@ public class PsychometricReport {
 
     /** When the comment was last updated */
     private LocalDateTime commentedAt;
+
+    /** Star ratings JSON: {"sessionQuality":4,"engagement":5,"goalClarity":3,"receptiveness":4} */
+    @Column(columnDefinition = "TEXT")
+    private String feedbackRatingsJson;
+
+    /** Likert outcomes JSON: {"understoodProfile":"Agree","actionPlan":"Strongly Agree","resources":"Neutral","nextSteps":"Agree"} */
+    @Column(columnDefinition = "TEXT")
+    private String feedbackOutcomesJson;
+
+    /** Counsellor's key observations about the student */
+    @Column(columnDefinition = "TEXT")
+    private String feedbackKeyObservations;
+
+    /** Numbered action items for the student */
+    @Column(columnDefinition = "TEXT")
+    private String feedbackActionItems;
+
+    /** Resources recommended by counsellor */
+    @Column(columnDefinition = "TEXT")
+    private String feedbackResourcesRecommended;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
