@@ -94,5 +94,6 @@ public class StudentCounsellingDto {
         private String status;
         private String meetLink;
         private LocalDateTime createdAt;
+        private boolean hasFeedback;
     }
 }

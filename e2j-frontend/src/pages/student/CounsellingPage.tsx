@@ -50,6 +50,7 @@ interface BookingDetail {
   status: string;
   meetLink: string;
   createdAt: string;
+  hasFeedback: boolean;
 }
 
 type View = 'browse' | 'profile' | 'payment' | 'confirmed' | 'my-bookings';
@@ -114,6 +115,10 @@ export default function CounsellingPage() {
   const [bookingSearch, setBookingSearch] = useState('');
   const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
   const [feedbackPopup, setFeedbackPopup] = useState<number | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<BookingDetail | null>(null);
+  const [fbRatings, setFbRatings] = useState({ q1: 0, q2: 0, q3: 0, q4: 0 });
+  const [fbComment, setFbComment] = useState('');
+  const [fbSaving, setFbSaving] = useState(false);
 
   const [myBookings, setMyBookings]     = useState<BookingDetail[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -973,6 +978,16 @@ export default function CounsellingPage() {
     );
 
     return (
+      <>
+      {feedbackModal && (
+        <FeedbackModal
+          booking={feedbackModal}
+          onClose={() => setFeedbackModal(null)}
+          onSaved={() => {
+            setMyBookings(bs => bs.map(b => b.id === feedbackModal.id ? { ...b, hasFeedback: true } : b));
+          }}
+        />
+      )}
       <div style={{ padding: '24px', minHeight: '100%', background: BG }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
@@ -1050,9 +1065,12 @@ export default function CounsellingPage() {
                   </span>
                   <span style={{ fontSize: '13px' }}>
                     {b.status === 'COMPLETED' ? (
-                      <span style={{ color: '#F59E0B', fontWeight: 600 }}>★ 3/5</span>
-                    ) : b.status === 'CONFIRMED' ? (
-                      <span style={{ color: PRIMARY, fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>GIVE FEEDBACK</span>
+                      b.hasFeedback ? (
+                        <span style={{ color: '#15803D', fontWeight: 600, fontSize: '12px' }}>✓ Done</span>
+                      ) : (
+                        <span onClick={() => { setFbRatings({ q1:0,q2:0,q3:0,q4:0 }); setFbComment(''); setFeedbackModal(b); }}
+                          style={{ color: PRIMARY, fontWeight: 700, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>GIVE FEEDBACK</span>
+                      )
                     ) : '--'}
                   </span>
                   <span>
@@ -1132,12 +1150,17 @@ export default function CounsellingPage() {
                               )}
 
                               {/* Feedback popup */}
-                              {feedbackPopup === b.id && !isCancelled && (
+                              {feedbackPopup === b.id && isCompleted && (
                                 <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '16px', width: '200px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', marginTop: '4px' }}>
                                   <p style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, color: TEXT, textAlign: 'center' }}>We Value Your Feedback</p>
-                                  <button style={{ width: '100%', padding: '8px', borderRadius: '100px', border: `1.5px solid ${PRIMARY}`, background: '#fff', color: PRIMARY, fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
-                                    GIVE FEEDBACK
-                                  </button>
+                                  {b.hasFeedback ? (
+                                    <p style={{ margin: 0, fontSize: '12px', color: '#15803D', fontWeight: 600, textAlign: 'center' }}>✓ Feedback submitted</p>
+                                  ) : (
+                                    <button onClick={e => { e.stopPropagation(); setFeedbackPopup(null); setFbRatings({ q1:0,q2:0,q3:0,q4:0 }); setFbComment(''); setFeedbackModal(b); }}
+                                      style={{ width: '100%', padding: '8px', borderRadius: '100px', border: `1.5px solid ${PRIMARY}`, background: '#fff', color: PRIMARY, fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                                      GIVE FEEDBACK
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1152,8 +1175,82 @@ export default function CounsellingPage() {
           </div>
         )}
       </div>
+      </>
     );
   }
 
   return null;
+}
+
+// ── Student Feedback Modal ────────────────────────────────────────────────────
+function FeedbackModal({ booking, onClose, onSaved }: { booking: BookingDetail; onClose: () => void; onSaved: () => void }) {
+  const PRIMARY = '#4F46E5', TEXT = '#1E293B', SUB = '#64748B', BORDER = '#E2E8F0';
+  const [ratings, setRatings] = useState({ q1: 0, q2: 0, q3: 0, q4: 0 });
+  const [comment, setComment] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const QUESTIONS = [
+    { key: 'q1' as const, label: 'How helpful was the session?' },
+    { key: 'q2' as const, label: 'How well did the counsellor understand your goals?' },
+    { key: 'q3' as const, label: 'Would you recommend this counsellor?' },
+    { key: 'q4' as const, label: 'Overall satisfaction?' },
+  ];
+  const LABELS = ['', 'Poor', 'Below Average', 'Average', 'Good', 'Excellent'];
+
+  const handleSubmit = async () => {
+    if (Object.values(ratings).some(v => v === 0)) return;
+    setSaving(true);
+    try {
+      await api.post(`/student/counselling/bookings/${booking.id}/feedback`, { ...ratings, comment });
+      onSaved();
+      onClose();
+    } catch { /* ignore */ } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ background: '#fff', borderRadius: '18px', width: '100%', maxWidth: '520px', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #7C3AED 100%)`, padding: '22px 24px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: 700 }}>Rate Your Session</div>
+            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '3px' }}>{booking.counsellorName} · {booking.sessionDate}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '6px 10px', color: '#fff', cursor: 'pointer', fontSize: '16px' }}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+            {QUESTIONS.map(({ key, label }) => (
+              <div key={key} style={{ background: '#F8FAFC', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '14px 16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT, marginBottom: '10px' }}>{label}</div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {[1,2,3,4,5].map(n => (
+                    <span key={n} onClick={() => setRatings(r => ({ ...r, [key]: n }))}
+                      style={{ fontSize: '26px', cursor: 'pointer', color: n <= ratings[key] ? '#FCD34D' : '#E2E8F0', transition: 'color 0.1s' }}>★</span>
+                  ))}
+                  {ratings[key] > 0 && (
+                    <span style={{ fontSize: '12px', color: SUB, marginLeft: '6px' }}>{LABELS[ratings[key]]}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <textarea value={comment} onChange={e => setComment(e.target.value)}
+            placeholder="Any additional comments? (optional)"
+            style={{ width: '100%', border: `1.5px solid ${BORDER}`, borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: TEXT, resize: 'vertical', outline: 'none', fontFamily: 'inherit', minHeight: '70px', boxSizing: 'border-box' }} />
+
+          <button onClick={handleSubmit} disabled={saving || Object.values(ratings).some(v => v === 0)}
+            style={{ width: '100%', marginTop: '14px', padding: '14px', background: Object.values(ratings).some(v => v === 0) ? '#A5B4FC' : PRIMARY, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: Object.values(ratings).some(v => v === 0) ? 'not-allowed' : 'pointer' }}>
+            {saving ? 'Submitting...' : '⭐ Submit Feedback'}
+          </button>
+          {Object.values(ratings).some(v => v === 0) && (
+            <p style={{ textAlign: 'center', fontSize: '12px', color: SUB, margin: '8px 0 0' }}>Please rate all 4 questions to submit</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

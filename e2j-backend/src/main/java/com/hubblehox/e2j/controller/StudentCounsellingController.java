@@ -56,4 +56,13 @@ public class StudentCounsellingController {
         service.saveQuestionnaire(user, bookingId, answers);
         return ResponseEntity.ok(ApiResponse.ok("Questionnaire saved"));
     }
+
+    @PostMapping("/bookings/{bookingId}/feedback")
+    public ResponseEntity<ApiResponse<String>> submitFeedback(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long bookingId,
+            @RequestBody Map<String, Object> body) {
+        service.submitFeedback(user, bookingId, body);
+        return ResponseEntity.ok(ApiResponse.ok("Feedback submitted"));
+    }
 }

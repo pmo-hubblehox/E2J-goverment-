@@ -27,6 +27,7 @@ public class StudentCounsellingService {
     private final CounsellorEducationRepository educationRepo;
     private final CounsellorWorkExperienceRepository workExpRepo;
     private final CounsellorCertificationRepository certRepo;
+    private final com.hubblehox.e2j.repository.CounsellorReviewRepository reviewRepo;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter LABEL_FMT = DateTimeFormatter.ofPattern("dd MMM").withLocale(Locale.ENGLISH);
@@ -199,6 +200,44 @@ public class StudentCounsellingService {
         bookingRepo.save(booking);
     }
 
+    @Transactional
+    public void submitFeedback(User user, Long bookingId, Map<String, Object> body) {
+        Student student = studentRepo.findByUser(user)
+                .orElseThrow(() -> new AppException("Student not found", HttpStatus.NOT_FOUND));
+        StudentBooking booking = bookingRepo.findById(bookingId)
+                .filter(b -> b.getStudent().getId().equals(student.getId()))
+                .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
+        if (booking.getStatus() != StudentBooking.Status.COMPLETED)
+            throw new AppException("Feedback only allowed for completed sessions", HttpStatus.BAD_REQUEST);
+        if (reviewRepo.findByBooking(booking).isPresent())
+            throw new AppException("Feedback already submitted", HttpStatus.CONFLICT);
+
+        int q1 = toInt(body.get("q1")), q2 = toInt(body.get("q2")),
+            q3 = toInt(body.get("q3")), q4 = toInt(body.get("q4"));
+        String comment = body.getOrDefault("comment", "").toString().strip();
+
+        com.hubblehox.e2j.entity.CounsellorReview review =
+                com.hubblehox.e2j.entity.CounsellorReview.builder()
+                        .booking(booking)
+                        .counsellor(booking.getCounsellor())
+                        .q1(q1).q2(q2).q3(q3).q4(q4)
+                        .comment(comment.isBlank() ? null : comment)
+                        .build();
+        reviewRepo.save(review);
+
+        // Recompute and persist counsellor average rating
+        Double avg = reviewRepo.computeAverageRating(booking.getCounsellor());
+        if (avg != null) {
+            booking.getCounsellor().setRating(Math.round(avg * 10.0) / 10.0);
+            counsellorRepo.save(booking.getCounsellor());
+        }
+    }
+
+    private int toInt(Object v) {
+        if (v == null) return 0;
+        try { return Integer.parseInt(v.toString()); } catch (Exception e) { return 0; }
+    }
+
     private StudentCounsellingDto.BookingDetail toDetail(StudentBooking b) {
         return StudentCounsellingDto.BookingDetail.builder()
                 .id(b.getId())
@@ -212,6 +251,7 @@ public class StudentCounsellingService {
                 .status(b.getStatus().name())
                 .meetLink(b.getMeetLink())
                 .createdAt(b.getCreatedAt())
+                .hasFeedback(reviewRepo.findByBooking(b).isPresent())
                 .build();
     }
 
