@@ -152,6 +152,10 @@ export default function InterviewSessionPage() {
       return;
     }
     if (cameraStreamRef.current) return; // already open
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera requires HTTPS');
+      return;
+    }
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         cameraStreamRef.current = stream;
@@ -254,6 +258,10 @@ export default function InterviewSessionPage() {
   const startListening = useCallback(async () => {
     transcriptRef.current = ''; speechStartRef.current = null;
     setLiveTranscript(''); setAnswerTimerSec(0);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      triggerViolation('Microphone requires HTTPS. Please access via HTTPS or localhost.');
+      return;
+    }
     let stream: MediaStream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaStreamRef.current = stream; }
     catch { triggerViolation('Microphone access denied.'); return; }
