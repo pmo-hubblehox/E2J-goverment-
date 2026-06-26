@@ -26,7 +26,7 @@ interface VersionEntry {
   id: number; version: number; status: string; createdAt: string;
 }
 
-interface SyllabusModule  { number: number; name: string; topics: string; hours: number; changed?: boolean; removed?: boolean; priority?: 'must_have' | 'good_to_have'; skills?: string[]; relevantRoles?: string[] }
+interface SyllabusModule  { number: number; name: string; topics: string; hours: number; changed?: boolean; removed?: boolean; priority?: 'must_have' | 'should_have' | 'good_to_have'; skills?: string[]; relevantRoles?: string[] }
 interface SyllabusSubject { code: string; name: string; objectives: string[]; outcomes: string[]; modules: SyllabusModule[]; skills?: string[]; relevantRoles?: string[] }
 interface SyllabusSemester{ name: string; subjects: SyllabusSubject[] }
 
@@ -643,10 +643,7 @@ function RecommendedView({ current, ai, onBack, onSendApproval }: {
                 const openKey  = `${semName}|${subCode}`;
                 const isSubOpen = openSubs.has(openKey);
 
-                const allModNums = Array.from(new Set([
-                  ...(currSub?.modules.map(m => m.number) ?? []),
-                  ...(aiSub?.modules.map(m => m.number) ?? []),
-                ])).sort((a, b) => a - b);
+
 
                 const subIdx = (subPairs.findIndex(p => p.key === subKey)) + 1;
 
@@ -714,144 +711,168 @@ function RecommendedView({ current, ai, onBack, onSendApproval }: {
                           </div>
                         </div>
 
-                        {/* Module rows */}
-                        {allModNums.map(mNum => {
-                          const currMod = currSub?.modules.find(m => m.number === mNum);
-                          const aiMod   = aiSub?.modules.find(m => m.number === mNum);
-                          const modKey  = `${semName}|${subCode}|${mNum}`;
-                          const isModOpen = openMods.has(modKey);
-                          const modChange = ai.changes?.find(c =>
-                            c.subjectCode === subCode && c.semester === semName &&
-                            (
-                              (typeof c.suggested === 'string' && c.suggested.includes(aiMod?.name ?? '~~')) ||
-                              (typeof c.original === 'string' && c.original.includes(currMod?.name ?? '~~'))
-                            )
-                          );
+                        {/* Module rows — grouped so new AI modules stack inline with the removed module they replace */}
+                        {(() => {
+                          const currMods = currSub?.modules ?? [];
+                          const aiMods   = aiSub?.modules  ?? [];
 
-                          const isRemoved  = aiMod?.removed === true;
-                          const isNewMod   = !currMod && !!aiMod;
-                          const isChanged  = !!aiMod?.changed && !isRemoved;
-                          const priority   = aiMod?.priority;
+                          // Split AI mods into: matched (same number as a current mod) vs orphan-new
+                          const currNums    = new Set(currMods.map(m => m.number));
+                          const orphanNews  = aiMods.filter(m => !currNums.has(m.number) && !m.removed);
+                          const orphanQueue = [...orphanNews];
 
-                          // Header styling for AI side
-                          const aiBg     = isRemoved ? '#FEF2F2' : isNewMod ? '#F0FDF4' : isChanged ? (priority === 'must_have' ? '#F0FDF4' : priority === 'good_to_have' ? '#FFFBEB' : '#FFF7ED') : '#F8F9FF';
-                          const aiColor  = isRemoved ? '#B91C1C' : isNewMod ? '#15803D' : isChanged ? '#EA580C' : TEXT;
+                          // Priority → colours
+                          function priorityStyle(p: SyllabusModule['priority'], isNew: boolean) {
+                            if (p === 'must_have')    return { bg: '#F0FDF4', hdrBg: '#F0FDF4', color: '#15803D', badge: '🟢 MUST HAVE',   badgeBg: '#DCFCE7', badgeColor: '#15803D' };
+                            if (p === 'should_have')  return { bg: '#FEFCE8', hdrBg: '#FEFCE8', color: '#CA8A04', badge: '🟡 SHOULD HAVE', badgeBg: '#FEF9C3', badgeColor: '#854D0E' };
+                            if (p === 'good_to_have') return { bg: '#FFF7ED', hdrBg: '#FFF7ED', color: '#C2410C', badge: '🟠 GOOD TO HAVE', badgeBg: '#FFEDD5', badgeColor: '#9A3412' };
+                            if (isNew) return { bg: '#F0FDF4', hdrBg: '#F0FDF4', color: '#15803D', badge: '➕ NEW', badgeBg: '#DCFCE7', badgeColor: '#15803D' };
+                            return { bg: '#F8F9FF', hdrBg: '#F8F9FF', color: TEXT, badge: '', badgeBg: '', badgeColor: '' };
+                          }
 
-                          return (
-                            <div key={mNum} style={{ borderTop: `1px solid ${BORDER}` }}>
-                              {/* Module header row — both columns clickable together */}
-                              <div style={{ display: 'flex', cursor: 'pointer' }} onClick={() => toggleMod(modKey)}>
-                                {/* Current module header */}
-                                <div style={{ flex: 1, padding: '10px 20px', background: '#F8F9FF', borderRight: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  {currMod ? (
-                                    <>
-                                      <span style={{ fontSize: '13px', fontWeight: 500, color: TEXT }}>{`Module ${currMod.number} - ${currMod.name}`}</span>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        {currMod.hours > 0 && <span style={{ fontSize: '12px', color: SUB }}>{currMod.hours} Hours</span>}
-                                        {isModOpen ? <ChevronUp size={14} color={SUB} /> : <ChevronDown size={14} color={SUB} />}
-                                      </div>
-                                    </>
-                                  ) : (
-                                    /* blank current side for new AI module */
-                                    <span style={{ fontSize: '12px', color: '#94A3B8', fontStyle: 'italic' }}>—</span>
-                                  )}
-                                </div>
+                          // Render a single AI module block (header + expanded content)
+                          function renderAiModBlock(aiMod: SyllabusModule, currMod: SyllabusModule | undefined, modKey: string, isFirst: boolean) {
+                            const isModOpen  = openMods.has(modKey);
+                            const isRemoved  = aiMod.removed === true;
+                            const isNewMod   = !currNums.has(aiMod.number);
+                            const isChanged  = !!aiMod.changed && !isRemoved;
+                            const ps         = priorityStyle(aiMod.priority, isNewMod);
+                            const hdrBg      = isRemoved ? '#FEF2F2' : ps.hdrBg;
+                            const hdrColor   = isRemoved ? '#B91C1C' : ps.color;
+                            const modChange  = ai.changes?.find(c =>
+                              c.subjectCode === subCode && c.semester === semName &&
+                              ((typeof c.suggested === 'string' && c.suggested.includes(aiMod.name)) ||
+                               (typeof c.original  === 'string' && c.original.includes(aiMod.name)))
+                            );
+
+                            return (
+                              <div key={`aiblock-${aiMod.number}-${aiMod.name}`} style={{ borderTop: isFirst ? 'none' : `1px solid ${BORDER}` }}>
                                 {/* AI module header */}
-                                <div style={{ flex: 1, padding: '10px 20px', background: aiBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  {aiMod ? (
-                                    <>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 500, color: aiColor, textDecoration: isRemoved ? 'line-through' : 'none' }}>
-                                          {`Module ${aiMod.number} - ${aiMod.name}`}
-                                        </span>
-                                        {isRemoved && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#FEE2E2', color: '#DC2626', fontSize: '10px', fontWeight: 700 }}>🔴 REMOVE</span>}
-                                        {!isRemoved && priority === 'must_have'    && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#DCFCE7', color: '#15803D', fontSize: '10px', fontWeight: 700 }}>🟢 MUST HAVE</span>}
-                                        {!isRemoved && priority === 'good_to_have' && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#FEF3C7', color: '#92400E', fontSize: '10px', fontWeight: 700 }}>🟡 GOOD TO HAVE</span>}
-                                        {isNewMod && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#DCFCE7', color: '#15803D', fontSize: '10px', fontWeight: 700 }}>➕ NEW</span>}
-                                      </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                                        {aiMod.hours > 0 && <span style={{ fontSize: '12px', color: isChanged ? '#EA580C' : SUB, fontWeight: isChanged ? 700 : 400 }}>{aiMod.hours} Hours</span>}
-                                        {isModOpen ? <ChevronUp size={14} color={SUB} /> : <ChevronDown size={14} color={SUB} />}
-                                      </div>
-                                    </>
-                                  ) : (
-                                    /* Module exists in current but removed by AI */
-                                    <span style={{ fontSize: '12px', color: '#94A3B8', fontStyle: 'italic' }}>Removed in AI recommendation</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Module content — shown when expanded */}
-                              {isModOpen && (
-                                <div style={{ display: 'flex', background: '#fff', borderTop: `1px solid ${BORDER}` }}>
-                                  {/* Current topics */}
-                                  <div style={{ flex: 1, padding: '14px 20px', borderRight: `1px solid ${BORDER}` }}>
-                                    {currMod?.topics
-                                      ? <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.8, margin: 0 }}>{currMod.topics}</p>
-                                      : <p style={{ fontSize: '13px', color: '#94A3B8', fontStyle: 'italic', margin: 0 }}>No topics listed.</p>
-                                    }
+                                <div style={{ padding: '10px 20px', background: hdrBg, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                                  onClick={() => toggleMod(modKey)}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, flexWrap: 'wrap' as const }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 500, color: hdrColor, textDecoration: isRemoved ? 'line-through' : 'none' }}>
+                                      {`Module ${aiMod.number} - ${aiMod.name}`}
+                                    </span>
+                                    {isRemoved && <span style={{ padding: '2px 8px', borderRadius: '100px', background: '#FEE2E2', color: '#DC2626', fontSize: '10px', fontWeight: 700 }}>🔴 REMOVE</span>}
+                                    {!isRemoved && ps.badge && <span style={{ padding: '2px 8px', borderRadius: '100px', background: ps.badgeBg, color: ps.badgeColor, fontSize: '10px', fontWeight: 700 }}>{ps.badge}</span>}
                                   </div>
-                                  {/* AI topics + why changed */}
-                                  <div style={{ flex: 1, padding: '14px 20px' }}>
-                                    {aiMod ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                                    {aiMod.hours > 0 && <span style={{ fontSize: '12px', color: isRemoved ? '#B91C1C' : isChanged ? '#EA580C' : SUB, fontWeight: isChanged ? 700 : 400 }}>{aiMod.hours} Hours</span>}
+                                    {isModOpen ? <ChevronUp size={14} color={SUB} /> : <ChevronDown size={14} color={SUB} />}
+                                  </div>
+                                </div>
+                                {/* AI module content */}
+                                {isModOpen && (
+                                  <div style={{ padding: '14px 20px', background: '#fff', borderTop: `1px solid ${BORDER}` }}>
+                                    {isRemoved ? (
                                       <>
-                                        {isRemoved ? (
-                                          /* Removed module — show original topics crossed out */
+                                        <p style={{ fontSize: '13px', color: '#DC2626', lineHeight: 1.8, margin: '0 0 12px', textDecoration: 'line-through', opacity: 0.7 }}>{aiMod.topics || currMod?.topics || '—'}</p>
+                                        {modChange?.reason && (
                                           <>
-                                            <p style={{ fontSize: '13px', color: '#DC2626', lineHeight: 1.8, margin: '0 0 12px', textDecoration: 'line-through', opacity: 0.7 }}>{aiMod.topics || currMod?.topics}</p>
-                                            {modChange?.reason && (
-                                              <>
-                                                <p style={{ fontSize: '13px', fontWeight: 700, color: TEXT, margin: '0 0 6px' }}>Why AI Suggested The Change?</p>
-                                                <div style={{ background: '#EEF2FF', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', color: '#374151', lineHeight: 1.7 }}>{modChange.reason}</div>
-                                              </>
-                                            )}
-                                          </>
-                                        ) : (
-                                          <>
-                                            {/* Topics: original text + new highlighted additions */}
-                                            <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.8, margin: '0 0 12px' }}>
-                                              {aiMod.topics || currMod?.topics || 'No topics listed.'}
-                                              {isChanged && modChange?.suggested && typeof modChange.suggested === 'string' && !aiMod.topics?.includes(modChange.suggested) && (
-                                                <span style={{ color: '#EA580C', fontWeight: 500 }}> {modChange.suggested}</span>
-                                              )}
-                                            </p>
-                                            {/* Why AI changed */}
-                                            {(isChanged || isNewMod) && modChange?.reason && (
-                                              <>
-                                                <p style={{ fontSize: '13px', fontWeight: 700, color: TEXT, margin: '0 0 6px' }}>Why AI Suggested The Change?</p>
-                                                <div style={{ background: '#EEF2FF', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', color: '#374151', lineHeight: 1.7 }}>{modChange.reason}</div>
-                                              </>
-                                            )}
-                                            {/* Skills on module level */}
-                                            {(isChanged || isNewMod) && aiMod.skills && aiMod.skills.length > 0 && (
-                                              <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#15803D' }}>Skills:</span>
-                                                {aiMod.skills.map(s => <span key={s} style={{ padding: '3px 10px', borderRadius: '100px', background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: '12px', color: '#166534' }}>{s}</span>)}
-                                              </div>
-                                            )}
-                                            {/* Roles on module level */}
-                                            {(isChanged || isNewMod) && aiMod.relevantRoles && aiMod.relevantRoles.length > 0 && (
-                                              <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '12px', fontWeight: 700, color: PRIMARY }}>Jobs:</span>
-                                                {aiMod.relevantRoles.map(r => <span key={r} style={{ padding: '3px 10px', borderRadius: '100px', background: '#EEF2FF', border: '1px solid #C7D2FE', fontSize: '12px', color: PRIMARY }}>{r}</span>)}
-                                              </div>
-                                            )}
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: TEXT, margin: '0 0 6px' }}>Why AI Suggested The Change?</p>
+                                            <div style={{ background: '#EEF2FF', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', color: '#374151', lineHeight: 1.7 }}>{modChange.reason}</div>
                                           </>
                                         )}
                                       </>
                                     ) : (
-                                      /* module present in current, removed by AI */
-                                      <div style={{ background: '#FEF2F2', borderRadius: '8px', padding: '12px 14px' }}>
-                                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#DC2626', margin: '0 0 6px' }}>AI recommends removing this module</p>
-                                        {modChange?.reason && <p style={{ fontSize: '13px', color: '#7F1D1D', lineHeight: 1.7, margin: 0 }}>{modChange.reason}</p>}
-                                      </div>
+                                      <>
+                                        <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.8, margin: '0 0 12px' }}>
+                                          {aiMod.topics || currMod?.topics || 'No topics listed.'}
+                                          {isChanged && modChange?.suggested && typeof modChange.suggested === 'string' && !aiMod.topics?.includes(modChange.suggested) && (
+                                            <span style={{ color: '#EA580C', fontWeight: 500 }}> {modChange.suggested}</span>
+                                          )}
+                                        </p>
+                                        {(isChanged || isNewMod) && modChange?.reason && (
+                                          <>
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: TEXT, margin: '0 0 6px' }}>Why AI Suggested The Change?</p>
+                                            <div style={{ background: '#EEF2FF', borderRadius: '8px', padding: '12px 14px', fontSize: '13px', color: '#374151', lineHeight: 1.7 }}>{modChange.reason}</div>
+                                          </>
+                                        )}
+                                        {(isChanged || isNewMod) && aiMod.skills && aiMod.skills.length > 0 && (
+                                          <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#15803D' }}>Skills:</span>
+                                            {aiMod.skills.map(s => <span key={s} style={{ padding: '3px 10px', borderRadius: '100px', background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: '12px', color: '#166534' }}>{s}</span>)}
+                                          </div>
+                                        )}
+                                        {(isChanged || isNewMod) && aiMod.relevantRoles && aiMod.relevantRoles.length > 0 && (
+                                          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: 700, color: PRIMARY }}>Jobs:</span>
+                                            {aiMod.relevantRoles.map(r => <span key={r} style={{ padding: '3px 10px', borderRadius: '100px', background: '#EEF2FF', border: '1px solid #C7D2FE', fontSize: '12px', color: PRIMARY }}>{r}</span>)}
+                                          </div>
+                                        )}
+                                      </>
                                     )}
                                   </div>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          return currMods.map(currMod => {
+                            const aiMod    = aiMods.find(m => m.number === currMod.number);
+                            const modKey   = `${semName}|${subCode}|${currMod.number}`;
+                            const isModOpen = openMods.has(modKey);
+                            // If this current module is being removed, pop orphan new mods to show inline
+                            const isRemoved = aiMod?.removed === true || (!aiMod && aiSub !== undefined && aiSub.modules.length > 0);
+                            const inlineNews: SyllabusModule[] = isRemoved ? orphanQueue.splice(0, 1) : [];
+
+                            const modChange = ai.changes?.find(c =>
+                              c.subjectCode === subCode && c.semester === semName &&
+                              ((typeof c.suggested === 'string' && c.suggested.includes(aiMod?.name ?? '~~')) ||
+                               (typeof c.original  === 'string' && c.original.includes(currMod.name)))
+                            );
+                            const isChanged = !!aiMod?.changed && !isRemoved;
+                            const ps        = priorityStyle(aiMod?.priority, false);
+
+                            return (
+                              <div key={currMod.number} style={{ borderTop: `1px solid ${BORDER}`, display: 'flex' }}>
+                                {/* LEFT — current module */}
+                                <div style={{ flex: 1, borderRight: `1px solid ${BORDER}` }}>
+                                  {/* Header */}
+                                  <div style={{ padding: '10px 20px', background: '#F8F9FF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                                    onClick={() => toggleMod(modKey)}>
+                                    <span style={{ fontSize: '13px', fontWeight: 500, color: TEXT }}>{`Module ${currMod.number} - ${currMod.name}`}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      {currMod.hours > 0 && <span style={{ fontSize: '12px', color: SUB }}>{currMod.hours} Hours</span>}
+                                      {isModOpen ? <ChevronUp size={14} color={SUB} /> : <ChevronDown size={14} color={SUB} />}
+                                    </div>
+                                  </div>
+                                  {/* Topics */}
+                                  {isModOpen && (
+                                    <div style={{ padding: '14px 20px', background: '#fff', borderTop: `1px solid ${BORDER}` }}>
+                                      <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.8, margin: 0 }}>{currMod.topics || 'No topics listed.'}</p>
+                                      {/* Gray placeholders to roughly match right column height when inline new mods exist */}
+                                      {inlineNews.length > 0 && (
+                                        <div style={{ marginTop: '16px' }}>
+                                          {inlineNews.map((_, i) => (
+                                            <div key={i} style={{ height: '80px', background: '#F1F5F9', borderRadius: '6px', marginBottom: '10px' }} />
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
+
+                                {/* RIGHT — AI side: primary aiMod + stacked new replacements */}
+                                <div style={{ flex: 1 }}>
+                                  {aiMod ? (
+                                    renderAiModBlock(aiMod, currMod, modKey, true)
+                                  ) : (
+                                    /* current module not in AI list at all */
+                                    <div style={{ padding: '10px 20px', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '44px' }}
+                                      onClick={() => toggleMod(modKey)}>
+                                      <span style={{ fontSize: '12px', color: '#B91C1C', fontStyle: 'italic' }}>AI recommends removing this module</span>
+                                      {isModOpen ? <ChevronUp size={14} color='#B91C1C' /> : <ChevronDown size={14} color='#B91C1C' />}
+                                    </div>
+                                  )}
+                                  {/* Inline new replacement modules stacked below */}
+                                  {inlineNews.map((nm, i) => renderAiModBlock(nm, undefined, `${semName}|${subCode}|new-${nm.number}-${i}`, false))}
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
                       </>
                     )}
                   </div>
