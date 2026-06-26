@@ -53,28 +53,6 @@ function Navbar() {
               )}
             </div>
 
-            {/* Sign Up dropdown */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => { setSignupOpen(p => !p); setLoginOpen(false); }}
-                style={{ padding: '8px 20px', border: 'none', borderRadius: '24px', background: '#EF4444', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-              >Sign Up</button>
-              {signupOpen && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.13)', border: '1px solid #E2E8F0', minWidth: '200px', overflow: 'hidden', zIndex: 200 }}>
-                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', padding: '12px 16px 6px', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sign up as</p>
-                  {ROLES.map(r => (
-                    <button key={r.label} onClick={() => r.active && r.registerPath && handleSignup(r.registerPath)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '11px 16px', border: 'none', background: 'transparent', cursor: r.active ? 'pointer' : 'not-allowed', fontSize: '14px', color: r.active ? '#1E293B' : '#CBD5E1', fontWeight: 500, textAlign: 'left' }}
-                      onMouseEnter={e => { if (r.active) e.currentTarget.style.background = '#F1F5F9'; }}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <span style={{ fontSize: '18px' }}>{r.icon}</span> {r.label}
-                      {!r.active && <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#CBD5E1', fontWeight: 400 }}>Coming soon</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
           </div>
         </div>
