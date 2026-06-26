@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Star, Clock, BookOpen, X, Play, ExternalLink, Zap } from 'lucide-react';
 import api from '../../services/api';
 
@@ -99,8 +100,11 @@ function extractSkillGapCourses(reportJson: string, targetRole: string): SkillGa
 }
 
 export default function CoursesPage() {
+  const location = useLocation();
+  const [initialRole] = useState<string>(() => (location.state as { searchRole?: string } | null)?.searchRole ?? '');
+  const consumedInitialRole = useRef(false);
   const [tab, setTab] = useState<Tab>('all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialRole);
   const [ytVideos, setYtVideos] = useState<YTVideo[]>([]);
   const [sgCourses, setSgCourses] = useState<SkillGapCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,11 +115,20 @@ export default function CoursesPage() {
     setLoading(true);
     setPlayingId(null);
     if (tab === 'all') {
-      // All Courses = YouTube recommended videos
-      api.get('/student/courses/youtube/recommended')
-        .then(r => setYtVideos(r.data.data ?? []))
-        .catch(() => setYtVideos([]))
-        .finally(() => setLoading(false));
+      if (initialRole && !consumedInitialRole.current) {
+        // Came from the aspiration report — pre-search courses for the top match role
+        consumedInitialRole.current = true;
+        api.get('/student/courses/youtube/search', { params: { q: initialRole } })
+          .then(r => setYtVideos(r.data.data ?? []))
+          .catch(() => setYtVideos([]))
+          .finally(() => setLoading(false));
+      } else {
+        // All Courses = YouTube recommended videos
+        api.get('/student/courses/youtube/recommended')
+          .then(r => setYtVideos(r.data.data ?? []))
+          .catch(() => setYtVideos([]))
+          .finally(() => setLoading(false));
+      }
     } else if (tab === 'recommended') {
       // Recommended = courses from skill gap reports for ACTIVE aspirations only
       Promise.all([

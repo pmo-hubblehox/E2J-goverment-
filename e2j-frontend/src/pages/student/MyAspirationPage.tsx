@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Loader2, Trash2, ArrowLeft, Plus, Briefcase, Clock, Download } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Loader2, Trash2, ArrowLeft, Plus, Briefcase, Clock, Download, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -609,23 +609,41 @@ export default function MyAspirationPage() {
             {/* PAYMENT */}
             {exploreStep === 'payment' && (
               <div style={{ maxWidth: '460px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: TEXT, margin: '0 0 4px' }}>Order Summary</h2>
-                <p style={{ fontSize: '13px', color: SUB, margin: '0 0 24px' }}>Review your order before proceeding.</p>
+                <h2 style={{ fontSize: '22px', fontWeight: 700, color: TEXT, margin: '0 0 8px', textAlign: 'center' }}>Unlock Your Personalized Career Report</h2>
+                <p style={{ fontSize: '13px', color: SUB, margin: '0 0 24px', textAlign: 'center', lineHeight: 1.6 }}>
+                  Complete your payment to take our AI-powered psychometric assessment and receive a personalized career report backed by psychometric science.
+                </p>
 
                 <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '24px', marginBottom: '14px' }}>
+                  {/* Assessment header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '16px', marginBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
                     <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontSize: '22px' }}>🧠</span>
                     </div>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>Psychometric Interest Test</div>
-                      <div style={{ fontSize: '12px', color: SUB, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>Psychometric Assessment</div>
+                      <div style={{ fontSize: '12px', color: SUB, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Clock size={11} /> 30 Questions &nbsp;·&nbsp; 15 Minutes
                       </div>
                     </div>
                   </div>
+
+                  {/* What you'll unlock */}
+                  <div style={{ paddingBottom: '16px', marginBottom: '16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT, marginBottom: '12px' }}>What You'll Unlock</div>
+                    {['Your Personality Profile', 'Your Top Career Matches', 'Recommended Career Paths', 'Why These Careers Suit You'].map((item) => (
+                      <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Check size={12} color="#16A34A" strokeWidth={3} />
+                        </span>
+                        <span style={{ fontSize: '13px', color: TEXT }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Fee breakdown */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '13px', color: SUB }}>Test Fee</span>
+                    <span style={{ fontSize: '13px', color: SUB }}>Assessment Fee</span>
                     <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>₹999.00</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -639,12 +657,12 @@ export default function MyAspirationPage() {
                 </div>
 
                 <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '12px', color: '#92400E' }}>
-                  This is a demo payment. Click "Pay Now" to proceed.
+                  This is a demo payment. Click "Pay & Start Assessment" to proceed.
                 </div>
 
                 <button onClick={handleExplorePay} disabled={paying}
                   style={{ width: '100%', padding: '14px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 600, cursor: paying ? 'not-allowed' : 'pointer', opacity: paying ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '10px' }}>
-                  {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</> : 'Pay Now'}
+                  {paying ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…</> : 'Pay & Start Assessment'}
                 </button>
                 <button onClick={() => { resetExplore(); setFlowStep('goal'); }}
                   style={{ width: '100%', padding: '11px', borderRadius: '100px', border: `1.5px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '14px', cursor: 'pointer' }}>
@@ -693,20 +711,19 @@ export default function MyAspirationPage() {
                         {q.questionText}
                       </div>
                       {/* 1-5 scale */}
-                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         {[1,2,3,4,5].map((val, idx) => {
                           const labels = ['Not Like Me', 'Slightly', 'Somewhat', 'Mostly', 'Very Much Like Me'];
                           const selected = answers[q.id] === val;
                           return (
                             <div key={val} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1, cursor: 'pointer' }}
                               onClick={() => setAnswers(prev => ({ ...prev, [q.id]: val }))}>
-                              <div style={{ width: '50px', height: '50px', borderRadius: '50%', border: `2px solid ${selected ? PRIMARY : BORDER}`, background: selected ? PRIMARY : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: selected ? '#fff' : '#475569', transform: selected ? 'scale(1.15)' : 'scale(1)', boxShadow: selected ? `0 4px 14px rgba(63,65,209,.3)` : 'none', transition: 'all .15s' }}>
+                              <div style={{ width: '50px', height: '50px', borderRadius: '50%', border: `2px solid ${selected ? PRIMARY : BORDER}`, background: selected ? PRIMARY : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: selected ? '#fff' : '#475569', transform: selected ? 'scale(1.15)' : 'scale(1)', boxShadow: selected ? `0 4px 14px rgba(63,65,209,.3)` : 'none', transition: 'all .15s', flexShrink: 0 }}>
                                 {val}
                               </div>
-                              {idx === 0 && <span style={{ fontSize: '10px', color: '#94A3B8', textAlign: 'center', maxWidth: '56px', lineHeight: 1.3 }}>{labels[idx]}</span>}
-                              {idx === 4 && <span style={{ fontSize: '10px', color: '#94A3B8', textAlign: 'center', maxWidth: '56px', lineHeight: 1.3 }}>{labels[idx]}</span>}
-                              {idx > 0 && idx < 4 && <span style={{ fontSize: '10px', color: 'transparent' }}>.</span>}
-                              {idx < 4 && <div style={{ position: 'absolute', display: 'none' }} />}
+                              <span style={{ fontSize: '10px', color: '#94A3B8', textAlign: 'center', lineHeight: 1.3, minHeight: '26px' }}>
+                                {idx === 0 || idx === 4 ? labels[idx] : ''}
+                              </span>
                             </div>
                           );
                         })}
@@ -715,8 +732,8 @@ export default function MyAspirationPage() {
                   )}
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px' }}>
-                    <button onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}
-                      style={{ padding: '9px 20px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '13px', cursor: currentQ === 0 ? 'not-allowed' : 'pointer', opacity: currentQ === 0 ? 0.4 : 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button onClick={() => { if (currentQ === 0) { setExploreStep('payment'); } else { setCurrentQ(q => Math.max(0, q - 1)); } }}
+                      style={{ padding: '9px 20px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <ChevronLeft size={14} /> Previous
                     </button>
                     <span style={{ fontSize: '12px', color: SUB }}>{answered} of {totalQ} answered</span>
@@ -739,7 +756,6 @@ export default function MyAspirationPage() {
             {/* REPORT */}
             {exploreStep === 'report' && psychReport && (() => {
               const scores: Record<string, number> = psychReport.scores ?? {};
-              const maxScore = Math.max(...Object.values(scores), 1);
               const paths: string[] = psychReport.recommendedPaths ?? [];
 
               // Sorted categories highest → lowest
@@ -800,20 +816,27 @@ export default function MyAspirationPage() {
                   {/* Scores + Paths grid (unchanged) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                     <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '24px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '18px' }}>Interest Scores</div>
-                      {Object.entries(scores).map(([cat, score]) => {
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '4px' }}>Interest Scores</div>
+                      <div style={{ fontSize: '11.5px', color: SUB, marginBottom: '18px' }}>Your score across the 6 RIASEC interest categories</div>
+                      {sortedCats.map(([cat, score], idx) => {
                         const col = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['C'];
-                        const p2 = Math.round((score / maxScore) * 100);
+                        const s = score as number;
+                        const p2 = Math.round((s / 25) * 100);
+                        const lvl = s >= 20 ? 'Very Strong' : s >= 16 ? 'Strong' : s >= 12 ? 'Moderate' : 'Developing';
                         return (
                           <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                            <div style={{ width: '100px', fontSize: '12px', fontWeight: 600, color: TEXT, flexShrink: 0 }}>{CATEGORY_NAMES[cat]}</div>
+                            <div style={{ width: '108px', fontSize: '12px', fontWeight: 600, color: TEXT, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {CATEGORY_NAMES[cat]}{idx < 2 && <span style={{ fontSize: '10px' }}>⭐</span>}
+                            </div>
                             <div style={{ flex: 1, background: '#F1F5F9', borderRadius: '100px', height: '8px' }}>
                               <div style={{ width: `${p2}%`, height: '8px', borderRadius: '100px', background: col.bar, transition: 'width .6s' }} />
                             </div>
-                            <div style={{ width: '24px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: col.bar, flexShrink: 0 }}>{score}</div>
+                            <div style={{ width: '40px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: col.bar, flexShrink: 0 }}>{s}/25</div>
+                            <div style={{ width: '72px', textAlign: 'right', fontSize: '10px', fontWeight: 600, color: idx < 2 ? col.bar : '#94A3B8', flexShrink: 0 }}>{lvl}</div>
                           </div>
                         );
                       })}
+                      <div style={{ fontSize: '11px', color: SUB, marginTop: '6px', paddingTop: '14px', borderTop: `1px solid ${BORDER}` }}>⭐ marks your top interest categories.</div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -869,8 +892,7 @@ export default function MyAspirationPage() {
 
                   {/* Why each career path */}
                   <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '6px' }}>Why these careers were recommended for you</div>
-                    <div style={{ fontSize: '12.5px', color: SUB, marginBottom: '14px' }}>Based on your top interest areas — <strong style={{ color: TEXT }}>{CATEGORY_NAMES[top1Cat]}</strong> and <strong style={{ color: TEXT }}>{CATEGORY_NAMES[top2Cat]}</strong> — here's why each path is a strong fit.</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '14px' }}>Why these careers were recommended for you</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {paths.map((path, i) => {
                         const det = CAREER_DETAIL[path];
@@ -884,7 +906,7 @@ export default function MyAspirationPage() {
                             {det ? (
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                                 <div>
-                                  <div style={{ fontSize: '10px', fontWeight: 700, color: col.bar, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>Why it matches you</div>
+                                  <div style={{ fontSize: '10px', fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>Why it matches you</div>
                                   <p style={{ fontSize: '12px', color: '#334155', lineHeight: 1.65, margin: 0 }}>{det.why}</p>
                                 </div>
                                 <div>
@@ -908,19 +930,6 @@ export default function MyAspirationPage() {
                   {/* Score breakdown narrative */}
                   <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '12px' }}>How we calculated your results</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '14px' }}>
-                      {sortedCats.map(([cat, s], idx) => {
-                        const col = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['C'];
-                        const lvl = (s as number) >= 20 ? 'Very Strong' : (s as number) >= 16 ? 'Strong' : (s as number) >= 12 ? 'Moderate' : 'Developing';
-                        return (
-                          <div key={cat} style={{ background: idx < 2 ? col.bg : BG, borderRadius: '10px', padding: '12px', border: `1px solid ${idx < 2 ? col.bar + '33' : BORDER}` }}>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: idx < 2 ? col.text : TEXT }}>{CATEGORY_NAMES[cat]}</div>
-                            <div style={{ fontSize: '20px', fontWeight: 800, color: idx < 2 ? col.bar : '#94A3B8', margin: '4px 0 2px' }}>{s}<span style={{ fontSize: '11px', fontWeight: 500, color: SUB }}>/25</span></div>
-                            <div style={{ fontSize: '10px', fontWeight: 600, color: idx < 2 ? col.bar : '#94A3B8' }}>{lvl}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
                     <p style={{ fontSize: '12.5px', color: '#334155', lineHeight: 1.7, margin: 0 }}>
                       You answered 30 questions across 6 RIASEC interest categories (5 questions per category, max score 25 each).
                       Your top two categories — <strong>{CATEGORY_NAMES[top1Cat]}</strong> ({top1Score}/25) and <strong>{CATEGORY_NAMES[top2Cat]}</strong> ({top2Score}/25) — were combined to identify the most fitting career cluster.
@@ -928,6 +937,18 @@ export default function MyAspirationPage() {
                         pct >= 60 ? ' Your overall score indicates good self-awareness. The recommendations are reliable, though a counsellor can help you refine further.' :
                           ' Your score suggests your interests are still forming — which is completely normal. A counsellor can help you explore which areas resonate most deeply.'}
                     </p>
+                  </div>
+
+                  {/* Explore Courses CTA */}
+                  <div style={{ background: '#EEF2FF', border: `1px solid #C7D2FE`, borderRadius: '16px', padding: '22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '4px' }}>Explore Courses</div>
+                      <div style={{ fontSize: '13px', color: SUB }}>Browse courses matching your top match{paths[0] ? <> — <strong style={{ color: TEXT }}>{paths[0]}</strong></> : ''}.</div>
+                    </div>
+                    <button onClick={() => { resetExplore(); resetWizard(); setView('list'); navigate('/student/courses', { state: { searchRole: paths[0] ?? '' } }); }}
+                      style={{ padding: '10px 24px', borderRadius: '100px', border: 'none', background: '#7C3AED', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BookOpen size={14} /> Browse Courses
+                    </button>
                   </div>
 
                   {/* CTA */}
