@@ -69,6 +69,8 @@ public class CounsellorController {
 
         // Not yet approved — apply changes immediately
         if (body.containsKey("phone"))              c.setPhone((String) body.get("phone"));
+        if (body.containsKey("photoUrl"))           c.setPhotoUrl((String) body.get("photoUrl"));
+        if (body.containsKey("aadhaarUrl"))         c.setAadhaarUrl((String) body.get("aadhaarUrl"));
         if (body.containsKey("gender"))             c.setGender((String) body.get("gender"));
         if (body.containsKey("differentlyAbled"))   c.setDifferentlyAbled((String) body.get("differentlyAbled"));
         if (body.containsKey("remarks"))            c.setRemarks((String) body.get("remarks"));

@@ -105,8 +105,8 @@ function Hero() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginTop: '48px' }}>
           {[
             { icon: '🎓', title: 'Student', desc: 'Launch Your Career With Personalised Learning Paths, Skill Tracking, And Direct Job Connections.', btn: 'Explore', anchor: 'students' },
-            { icon: '🔍', title: 'Industry Partner', desc: 'Find Top Talent From Our Curated Pool Of Skilled, Job-Ready Students. Fast, Smart Hiring.', btn: 'Explore', anchor: 'industry' },
             { icon: '🏛️', title: 'Institute', desc: 'Empower Your Students With Career Tools, Track Placement Success, And Connect With Industry Leaders.', btn: 'Explore', anchor: 'institutes' },
+            { icon: '🔍', title: 'Industry Partner', desc: 'Find Top Talent From Our Curated Pool Of Skilled, Job-Ready Students. Fast, Smart Hiring.', btn: 'Explore', anchor: 'industry' },
             { icon: '🧑‍💼', title: 'Counsellor', desc: 'Share Your Expertise, Set Your Schedule, And Guide Students Toward Their Dream Careers.', btn: 'Explore', anchor: 'counsellors' },
           ].map(card => (
             <div key={card.title} style={{ background: '#fff', borderRadius: '16px', padding: '28px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)', textAlign: 'center' }}>
@@ -579,8 +579,8 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <ForStudents />
-      <ForIndustry />
       <ForInstitutes />
+      <ForIndustry />
       <ForCounsellors />
       <Testimonials />
       <Footer />

@@ -767,7 +767,10 @@ public class InstituteController {
     public ResponseEntity<ApiResponse<Institute>> saveOnboardingInfo(
             @AuthenticationPrincipal User user,
             @RequestBody Map<String, Object> body) {
-        Institute inst = getInstitute(user);
+        Institute inst = instituteRepo.findByUser(user)
+                .orElseGet(() -> instituteRepo.save(Institute.builder()
+                        .user(user).name(user.getEmail().split("@")[0])
+                        .status(Institute.Status.PENDING).build()));
         if (body.containsKey("name"))               inst.setName((String) body.get("name"));
         if (body.containsKey("type"))               inst.setType((String) body.get("type"));
         if (body.containsKey("websiteUrl"))         inst.setWebsiteUrl((String) body.get("websiteUrl"));
