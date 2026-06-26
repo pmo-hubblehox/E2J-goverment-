@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    allowedHosts: ['education-to-job.hubblehox.ai', 'education-to-job-api.hubblehox.ai']
   }
 })
