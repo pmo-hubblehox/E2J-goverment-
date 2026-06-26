@@ -30,20 +30,20 @@ public class PsychometricService {
 
     // Career path recommendations keyed by top-2 category combo (sorted)
     private static final Map<String, List<String>> PATH_MAP = new LinkedHashMap<>() {{
-        put("I+E", List.of("Data Scientist", "AI/ML Engineer", "Product Manager", "Software Architect", "Technical Founder"));
+        put("E+I", List.of("Data Scientist", "AI/ML Engineer", "Product Manager", "Software Architect", "Technical Founder"));
         put("I+R", List.of("Backend Developer", "Software Engineer", "DevOps Engineer", "Data Analyst", "Cloud Engineer"));
-        put("I+A", List.of("UI/UX Designer", "Frontend Developer", "Creative Technologist", "Game Developer", "Multimedia Engineer"));
+        put("A+I", List.of("UI/UX Designer", "Frontend Developer", "Creative Technologist", "Game Developer", "Multimedia Engineer"));
         put("I+S", List.of("Data Analyst", "Business Analyst", "Research Scientist", "Education Technologist", "Healthcare Data Analyst"));
-        put("I+C", List.of("Database Administrator", "Software Tester/QA Engineer", "Systems Analyst", "IT Auditor", "Compliance Analyst"));
+        put("C+I", List.of("Database Administrator", "Software Tester/QA Engineer", "Systems Analyst", "IT Auditor", "Compliance Analyst"));
         put("E+R", List.of("Technical Sales Engineer", "Startup Founder", "Product Owner", "Solutions Architect", "Engineering Manager"));
         put("E+S", List.of("Business Development Manager", "HR Tech Specialist", "Career Counsellor", "EdTech Entrepreneur", "Community Manager"));
-        put("E+A", List.of("Creative Director", "Brand Strategist", "Marketing Technologist", "UX Strategist", "Growth Hacker"));
-        put("E+C", List.of("Project Manager", "Operations Manager", "IT Manager", "Business Analyst", "Finance Technology Analyst"));
+        put("A+E", List.of("Creative Director", "Brand Strategist", "Marketing Technologist", "UX Strategist", "Growth Hacker"));
+        put("C+E", List.of("Project Manager", "Operations Manager", "IT Manager", "Business Analyst", "Finance Technology Analyst"));
         put("A+S", List.of("Instructional Designer", "UX Researcher", "Content Strategist", "E-Learning Developer", "Training Consultant"));
         put("A+R", List.of("Game Developer", "Embedded Systems Designer", "Industrial Designer", "Hardware Engineer", "Creative Engineer"));
-        put("S+C", List.of("IT Support Engineer", "Technical Trainer", "Customer Success Manager", "ERP Consultant", "Help Desk Manager"));
-        put("R+C", List.of("Network Engineer", "IT Systems Administrator", "Cloud Support Associate", "Automation Engineer", "Security Analyst"));
-        put("S+R", List.of("Technical Support Engineer", "Field Application Engineer", "IT Consultant", "Systems Integrator", "Technical Trainer"));
+        put("C+S", List.of("IT Support Engineer", "Technical Trainer", "Customer Success Manager", "ERP Consultant", "Help Desk Manager"));
+        put("C+R", List.of("Network Engineer", "IT Systems Administrator", "Cloud Support Associate", "Automation Engineer", "Security Analyst"));
+        put("R+S", List.of("Technical Support Engineer", "Field Application Engineer", "IT Consultant", "Systems Integrator", "Technical Trainer"));
         put("A+C", List.of("Web Designer", "Digital Media Producer", "Front-End Developer", "Graphic Technologist", "Content Management Specialist"));
     }};
 

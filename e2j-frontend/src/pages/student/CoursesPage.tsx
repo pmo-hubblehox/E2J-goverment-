@@ -102,13 +102,15 @@ function extractSkillGapCourses(reportJson: string, targetRole: string): SkillGa
 
 export default function CoursesPage() {
   const location = useLocation();
-  const locationState = location.state as { searchRole?: string; fromPsychometric?: boolean } | null;
-  const [initialRole] = useState<string>(() => locationState?.searchRole ?? '');
-  const [fromPsychometric] = useState<boolean>(() => locationState?.fromPsychometric ?? false);
+  const [initialRole] = useState<string>(() => {
+    const role = sessionStorage.getItem('psychCourseRole') ?? '';
+    if (role) sessionStorage.removeItem('psychCourseRole');
+    return role;
+  });
+  const fromPsychometric = initialRole !== '';
   const consumedInitialRole = useRef(false);
   const [tab, setTab] = useState<Tab>(() => fromPsychometric ? 'recommended' : 'all');
-  // Don't pre-fill search when coming from psychometric — it would filter out skill gap fallback courses
-  const [search, setSearch] = useState(() => fromPsychometric ? '' : initialRole);
+  const [search, setSearch] = useState('');
   const [ytVideos, setYtVideos] = useState<YTVideo[]>([]);
   const [sgCourses, setSgCourses] = useState<SkillGapCourse[]>([]);
   const [loading, setLoading] = useState(true);

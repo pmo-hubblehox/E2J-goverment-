@@ -122,8 +122,24 @@ export default function MyAspirationPage() {
   const load = () => {
     setLoading(true);
     api.get('/student/aspirations')
-      .then(r => {
+      .then(async r => {
         const data = r.data?.data ?? [];
+        const exploreOnes = data.filter((a: any) => a.roleArea === 'Exploring Interests' && a.goal === 'explore' && a.id);
+        if (exploreOnes.length > 0) {
+          try {
+            const pr = await api.get('/student/psychometric/reports');
+            const topMatch: string = pr.data?.data?.[0]?.topCareerMatch ?? '';
+            if (topMatch) {
+              await Promise.all(exploreOnes.map((a: any) =>
+                api.patch(`/student/aspiration/${a.id}`, { roleArea: topMatch }).catch(() => {})
+              ));
+              const refreshed = await api.get('/student/aspirations');
+              setAspirations(refreshed.data?.data ?? []);
+              isInitialLoad.current = false;
+              return;
+            }
+          } catch { /* best effort */ }
+        }
         setAspirations(data);
         if (isInitialLoad.current && data.length === 0) {
           resetWizard();
@@ -1027,7 +1043,7 @@ export default function MyAspirationPage() {
                       <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT, marginBottom: '4px' }}>Explore Courses</div>
                       <div style={{ fontSize: '13px', color: SUB }}>Browse courses matching your top match{paths[0] ? <> — <strong style={{ color: TEXT }}>{paths[0]}</strong></> : ''}.</div>
                     </div>
-                    <button onClick={() => { resetExplore(); resetWizard(); setView('list'); navigate('/student/courses', { state: { searchRole: paths[0] ?? '', fromPsychometric: true } }); }}
+                    <button onClick={() => { resetExplore(); resetWizard(); setView('list'); sessionStorage.setItem('psychCourseRole', paths[0] ?? ''); navigate('/student/courses'); }}
                       style={{ padding: '10px 24px', borderRadius: '100px', border: 'none', background: '#7C3AED', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <BookOpen size={14} /> Browse Courses
                     </button>
