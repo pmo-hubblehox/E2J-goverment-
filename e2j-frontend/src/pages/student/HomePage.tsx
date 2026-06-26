@@ -54,7 +54,7 @@ export default function HomePage() {
       .then(r => setCourses(r.data.data ?? []))
       .catch(() => {});
 
-    api.get('/counsellor/bookings/my').then(r => {
+    api.get('/student/counselling/bookings').then(r => {
       const b = r.data?.data?.content ?? r.data?.data ?? [];
       setCalBookings(Array.isArray(b) ? b : []);
     }).catch(() => {});
