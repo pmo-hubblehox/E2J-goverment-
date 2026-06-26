@@ -51,7 +51,8 @@ public class IndustryPartnerController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOnboardingStatus(
             @AuthenticationPrincipal UserDetails userDetails) {
         boolean completed = industryPartnerService.isOnboardingCompleted(userDetails.getUsername());
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("onboardingCompleted", completed), "OK"));
+        String status = industryPartnerService.getStatus(userDetails.getUsername()).getApplicationStatus();
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("onboardingCompleted", completed, "applicationStatus", status), "OK"));
     }
 
     // Get application status only

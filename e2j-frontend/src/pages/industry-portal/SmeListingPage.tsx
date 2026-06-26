@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Download, Plus, MoreVertical, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Search, Filter, Download, Plus, MoreVertical, Eye, Edit2, Trash2, Upload } from 'lucide-react';
 import api from '../../services/api';
 
 const PRIMARY = '#3F41D1';
@@ -64,6 +64,9 @@ export default function SmeListingPage() {
   const [viewMode, setViewMode] = useState<'List' | 'Calendar'>('List');
   const [smes, setSmes] = useState<Sme[]>([]);
   const [search, setSearch] = useState('');
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState('');
+  const bulkRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     api.get('/industry-portal/sme')
@@ -75,6 +78,22 @@ export default function SmeListingPage() {
 
   const handleDelete = (id: number) => {
     api.delete(`/industry-portal/sme/${id}`).then(load);
+  };
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setBulkUploading(true); setBulkMsg('');
+    const form = new FormData(); form.append('file', file);
+    try {
+      const res = await api.post('/industry-portal/sme/bulk', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setBulkMsg(`✓ ${res.data?.message ?? 'Uploaded successfully'}`);
+      load();
+    } catch (err: any) {
+      setBulkMsg(`✗ ${err?.response?.data?.message ?? 'Upload failed'}`);
+    } finally {
+      setBulkUploading(false);
+      if (bulkRef.current) bulkRef.current.value = '';
+    }
   };
 
   const filtered = smes.filter(s => s.smeName.toLowerCase().includes(search.toLowerCase()));
@@ -103,11 +122,21 @@ export default function SmeListingPage() {
         <button style={{ padding: '0 14px', height: '36px', border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', cursor: 'pointer', color: TEXT }}>
           <Download size={14} />
         </button>
+        <input ref={bulkRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleBulkUpload} />
+        <button onClick={() => api.get('/industry-portal/sme/bulk/sample', { responseType: 'blob' }).then(r => { const a = document.createElement('a'); a.href = URL.createObjectURL(r.data); a.download = 'sample_smes.xlsx'; a.click(); })}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 14px', height: '36px', border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', cursor: 'pointer', color: TEXT, fontSize: '13px' }}>
+          <Download size={14} /> Sample
+        </button>
+        <button onClick={() => bulkRef.current?.click()} disabled={bulkUploading}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', border: `1px solid ${PRIMARY}`, borderRadius: '8px', background: '#EEF2FF', color: PRIMARY, fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: bulkUploading ? 0.6 : 1 }}>
+          <Upload size={14} /> {bulkUploading ? 'Uploading…' : 'Bulk Upload'}
+        </button>
         <button onClick={() => navigate('/industry-portal/sme/add')}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 20px', height: '36px', border: 'none', borderRadius: '100px', background: '#E91E8C', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
           <Plus size={15} /> Add
         </button>
       </div>
+      {bulkMsg && <p style={{ fontSize: '13px', color: bulkMsg.startsWith('✓') ? '#16A34A' : '#DC2626', margin: '-12px 0 12px' }}>{bulkMsg}</p>}
 
       {viewMode === 'List' ? (
         <div style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${BORDER}`, overflow: 'visible' }}>

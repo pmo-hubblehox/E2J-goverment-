@@ -404,6 +404,7 @@ export default function IndustryOnboardingPage() {
   const [submitting, setSubmitting]   = useState(false);
   const [submitted, setSubmitted]     = useState(false);
   const [error, setError]             = useState('');
+  const [savedMsg, setSavedMsg]       = useState('');
 
   const setS1 = (u: Partial<S1>) => setS1Raw(p => ({ ...p, ...u }));
   const setS2 = (u: Partial<S2>) => setS2Raw(p => ({ ...p, ...u }));
@@ -466,10 +467,11 @@ export default function IndustryOnboardingPage() {
   });
 
   const saveAsDraft = async () => {
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setSavedMsg('');
     try {
       await api.put('/industry-partner/application', payload());
-      navigate('/industry-partner');
+      setSavedMsg('Draft saved successfully!');
+      setTimeout(() => setSavedMsg(''), 3000);
     } catch {
       setError('Failed to save. Please try again.');
     } finally {
@@ -490,32 +492,11 @@ export default function IndustryOnboardingPage() {
     }
   };
 
-  const requiredFieldsFilled =
-    // Step 1 — Company Info
-    s1.registeredName.trim() !== '' &&
-    s1.registeringAs !== '' &&
-    s1.organizationSize !== '' &&
-    // Step 1 — Address
-    s1.houseNumber.trim() !== '' &&
-    s1.flatFloor.trim() !== '' &&
-    s1.pinCode.trim() !== '' &&
-    s1.state !== '' &&
-    s1.city.trim() !== '' &&
-    s1.district.trim() !== '' &&
-    s1.areaLocality.trim() !== '' &&
-    s1.landmark.trim() !== '' &&
-    // Step 2 — Business
-    s2.pan.trim() !== '' &&
-    s2.taxId.trim() !== '' &&
-    s2.numberOfEmployees.trim() !== '' &&
-    s2.annualRevenue.trim() !== '' &&
-    s2.jobRolesAvailable !== '' &&
-    s2.recruitmentVision.trim() !== '';
   const docsFilled =
     s3.panDoc.trim() !== '' && s3.gstDoc.trim() !== '' &&
     s3.tanDoc.trim() !== '' && s3.cinDoc.trim() !== '' &&
     s3.brochure.trim() !== '';
-  const canSubmit = step === 2 && confirmTrue && acceptMou && requiredFieldsFilled && docsFilled;
+  const canSubmit = step === 2 && confirmTrue && acceptMou && docsFilled;
 
   const ghostBtn: React.CSSProperties = { padding: '0 24px', height: '40px', border: `1px solid ${BORDER}`, borderRadius: '100px', background: '#fff', fontSize: '14px', fontWeight: 500, color: TEXT_MAIN, cursor: 'pointer', textTransform: 'capitalize' as const };
   const pinkBtn:  React.CSSProperties = { padding: '0 32px', height: '40px', border: 'none', borderRadius: '100px', background: ACCENT_PINK, color: '#fff', fontSize: '14px', fontWeight: 500, cursor: 'pointer', textTransform: 'capitalize' as const };
@@ -548,7 +529,8 @@ export default function IndustryOnboardingPage() {
           })}
         </div>
 
-        {error && <p style={{ fontSize: '13px', color: '#E6393E', marginBottom: '16px' }}>{error}</p>}
+        {error    && <p style={{ fontSize: '13px', color: '#E6393E', marginBottom: '16px' }}>{error}</p>}
+        {savedMsg && <p style={{ fontSize: '13px', color: '#16A34A', marginBottom: '16px' }}>{savedMsg}</p>}
 
         {step === 0 && <StepCompany d={s1} set={setS1} />}
         {step === 1 && <StepBusiness d={s2} set={setS2} />}

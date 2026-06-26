@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreVertical, Search, Filter, Download, Plus, Eye, Edit2, Trash2 } from 'lucide-react';
+import { MoreVertical, Search, Filter, Download, Plus, Eye, Edit2, Trash2, Upload } from 'lucide-react';
 import api from '../../services/api';
 import { downloadCSV } from '../../utils/csvExport';
 
@@ -70,6 +70,9 @@ export default function JobListingPage() {
   const [postings, setPostings] = useState<Posting[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState('');
+  const bulkRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
     setLoading(true);
@@ -80,6 +83,22 @@ export default function JobListingPage() {
   };
 
   useEffect(() => { load(); }, [tab]);
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    setBulkUploading(true); setBulkMsg('');
+    const form = new FormData(); form.append('file', file);
+    try {
+      const res = await api.post('/industry-portal/jobs/bulk', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setBulkMsg(`✓ ${res.data?.message ?? 'Uploaded successfully'}`);
+      load();
+    } catch (err: any) {
+      setBulkMsg(`✗ ${err?.response?.data?.message ?? 'Upload failed'}`);
+    } finally {
+      setBulkUploading(false);
+      if (bulkRef.current) bulkRef.current.value = '';
+    }
+  };
 
   const handleDelete = (id: number) => {
     if (!confirm('Delete this posting?')) return;
@@ -146,11 +165,21 @@ export default function JobListingPage() {
         <button onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 14px', height: '36px', border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', cursor: 'pointer', color: TEXT, fontSize: '13px' }}>
           <Download size={14} /> Export
         </button>
+        <input ref={bulkRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleBulkUpload} />
+        <button onClick={() => api.get('/industry-portal/jobs/bulk/sample', { responseType: 'blob' }).then(r => { const a = document.createElement('a'); a.href = URL.createObjectURL(r.data); a.download = 'sample_jobs.xlsx'; a.click(); })}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0 14px', height: '36px', border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', cursor: 'pointer', color: TEXT, fontSize: '13px' }}>
+          <Download size={14} /> Sample
+        </button>
+        <button onClick={() => bulkRef.current?.click()} disabled={bulkUploading}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', border: `1px solid ${PRIMARY}`, borderRadius: '8px', background: '#EEF2FF', color: PRIMARY, fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: bulkUploading ? 0.6 : 1 }}>
+          <Upload size={14} /> {bulkUploading ? 'Uploading…' : 'Bulk Upload'}
+        </button>
         <button onClick={() => navigate(isJob ? '/industry-portal/jobs/add' : '/industry-portal/internships/add')}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 20px', height: '36px', border: 'none', borderRadius: '100px', background: '#E91E8C', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
           <Plus size={15} /> Add
         </button>
       </div>
+      {bulkMsg && <p style={{ fontSize: '13px', color: bulkMsg.startsWith('✓') ? '#16A34A' : '#DC2626', margin: '8px 0 0' }}>{bulkMsg}</p>}
 
       {/* Table */}
       <div style={{ background: '#fff', borderRadius: '12px', border: `1px solid ${BORDER}`, overflow: 'visible' }}>

@@ -88,8 +88,10 @@ export default function LoginPage() {
       if (user.role === 'INDUSTRY_PARTNER') {
         try {
           const statusRes = await api.get('/industry-partner/onboarding/status');
-          const { onboardingCompleted } = statusRes.data.data;
-          navigate(onboardingCompleted ? '/industry-partner' : '/industry-partner/onboarding');
+          const { applicationStatus } = statusRes.data.data;
+          if (applicationStatus === 'APPROVED') navigate('/industry-portal');
+          else if (applicationStatus === 'SUBMITTED' || applicationStatus === 'UNDER_REVIEW') navigate('/industry-partner');
+          else navigate('/industry-partner/onboarding'); // DRAFT or REJECTED → back to onboarding
         } catch {
           navigate('/industry-partner/onboarding');
         }

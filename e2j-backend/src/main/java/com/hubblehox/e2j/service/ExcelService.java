@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -24,6 +25,9 @@ public class ExcelService {
     private final StudentRepository studentAccountRepo;
     private final StudentEducationRepository educationRepo;
     private final PasswordEncoder passwordEncoder;
+    private final JobPostingRepository jobPostingRepo;
+    private final IndustrySmeRepository smeRepo;
+    private final IndustryPartnerRepository industryPartnerRepo;
 
     // ── Cell readers ──────────────────────────────────────────────────────────
 
@@ -355,6 +359,134 @@ public class ExcelService {
             {"Theory Hrs/Week",   "Theory teaching hours per week"},
         };
         return buildWorkbook("Credit Structure", headers, data, ih, id);
+    }
+
+    // ── Bulk upload: Job Postings ─────────────────────────────────────────────
+    // Columns: Type | Job Role | Department | Employment Type | Work Mode | Location | Positions | Target Date (YYYY-MM-DD) | Status
+
+    public int bulkUploadJobs(MultipartFile file, IndustryPartner partner) throws IOException {
+        int count = 0;
+        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = wb.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+                String type    = str(row.getCell(0)).toUpperCase();
+                String jobRole = str(row.getCell(1));
+                if (jobRole.isBlank()) continue;
+                String dateStr = str(row.getCell(7));
+                LocalDate targetDate = null;
+                try { if (!dateStr.isBlank()) targetDate = LocalDate.parse(dateStr); } catch (Exception ignored) {}
+                String statusStr = str(row.getCell(8)).toUpperCase();
+                JobPosting.Status status = JobPosting.Status.DRAFT;
+                try { status = JobPosting.Status.valueOf(statusStr); } catch (Exception ignored) {}
+                JobPosting jp = JobPosting.builder()
+                        .partner(partner)
+                        .postingType("INTERNSHIP".equals(type) ? JobPosting.PostingType.INTERNSHIP : JobPosting.PostingType.JOB)
+                        .jobRole(jobRole)
+                        .department(str(row.getCell(2)))
+                        .employmentType(str(row.getCell(3)))
+                        .workMode(str(row.getCell(4)))
+                        .location(str(row.getCell(5)))
+                        .positions((int) num(row.getCell(6)))
+                        .targetDate(targetDate)
+                        .status(status)
+                        .build();
+                jobPostingRepo.save(jp);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public byte[] sampleJobsExcel() throws IOException {
+        String[] headers = { "Type (JOB/INTERNSHIP)", "Job Role", "Department", "Employment Type", "Work Mode", "Location", "Positions", "Target Date (YYYY-MM-DD)", "Status (DRAFT/PUBLISHED)" };
+        Object[][] data = {
+            { "JOB",        "Software Engineer",  "Engineering", "Full-time", "Hybrid",  "Bangalore", 5, "2025-09-01", "PUBLISHED" },
+            { "JOB",        "Data Analyst",       "Analytics",   "Full-time", "Onsite",  "Hyderabad", 3, "2025-09-15", "DRAFT"     },
+            { "INTERNSHIP", "Frontend Intern",    "Engineering", "",          "Remote",  "Mumbai",    2, "2025-08-01", "PUBLISHED" },
+        };
+        String[] ih = { "Column", "Description" };
+        String[][] id = {
+            { "Type",              "JOB or INTERNSHIP" },
+            { "Job Role",          "Title of the role (required)" },
+            { "Department",        "Department name" },
+            { "Employment Type",   "Full-time / Part-time / Contract (for JOB)" },
+            { "Work Mode",         "Remote / Hybrid / Onsite" },
+            { "Location",          "City or location" },
+            { "Positions",         "Number of open positions" },
+            { "Target Date",       "Application deadline in YYYY-MM-DD format" },
+            { "Status",            "DRAFT or PUBLISHED" },
+        };
+        return buildWorkbook("Jobs", headers, data, ih, id);
+    }
+
+    // ── Bulk upload: SMEs ─────────────────────────────────────────────────────
+    // Columns: Name | Expertise Areas (comma-sep) | Bio | Available From | Available To | Days (comma-sep) | Mode | Location / Meeting Link
+
+    public int bulkUploadSmes(MultipartFile file, IndustryPartner partner) throws IOException {
+        int count = 0;
+        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = wb.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+                String name = str(row.getCell(0));
+                if (name.isBlank()) continue;
+                String expertiseRaw = str(row.getCell(1));
+                String expertiseJson = "[" + splitCsv(expertiseRaw).stream()
+                        .map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
+                        .reduce((a, b) -> a + "," + b).orElse("") + "]";
+                String daysRaw = str(row.getCell(5));
+                String daysJson = "[" + splitCsv(daysRaw).stream()
+                        .map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
+                        .reduce((a, b) -> a + "," + b).orElse("") + "]";
+                String fromStr = str(row.getCell(3));
+                String toStr   = str(row.getCell(4));
+                LocalDate from = null, to = null;
+                try { if (!fromStr.isBlank()) from = LocalDate.parse(fromStr); } catch (Exception ignored) {}
+                try { if (!toStr.isBlank())   to   = LocalDate.parse(toStr);   } catch (Exception ignored) {}
+                String mode = str(row.getCell(6));
+                String locOrLink = str(row.getCell(7));
+                IndustrySme sme = IndustrySme.builder()
+                        .partner(partner)
+                        .smeName(name)
+                        .expertiseArea(expertiseJson)
+                        .bio(str(row.getCell(2)))
+                        .availableFrom(from)
+                        .availableTo(to)
+                        .days(daysJson)
+                        .mode(mode)
+                        .locationName("Offline".equalsIgnoreCase(mode) || "Both".equalsIgnoreCase(mode) ? locOrLink : null)
+                        .meetingLink("Online".equalsIgnoreCase(mode)  || "Both".equalsIgnoreCase(mode) ? locOrLink : null)
+                        .status(IndustrySme.Status.PUBLISHED)
+                        .build();
+                smeRepo.save(sme);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public byte[] sampleSmesExcel() throws IOException {
+        String[] headers = { "Name", "Expertise Areas (comma-separated)", "Bio", "Available From (YYYY-MM-DD)", "Available To (YYYY-MM-DD)", "Days (comma-separated)", "Mode (Online/Offline/Both)", "Location / Meeting Link" };
+        Object[][] data = {
+            { "Rajesh Sharma",   "Java, Spring Boot, Microservices", "10+ yrs in backend dev", "2025-08-01", "2025-12-31", "Monday,Wednesday,Friday", "Online",  "https://meet.google.com/abc" },
+            { "Priya Nair",      "Data Science, Python, ML",         "ML engineer at TCS",     "2025-09-01", "2025-11-30", "Tuesday,Thursday",        "Offline", "TCS Bangalore Campus" },
+            { "Amit Verma",      "UI/UX, Figma, React",              "Product designer 8 yrs", "2025-08-15", "2025-12-15", "Monday,Friday",           "Both",    "https://teams.microsoft.com/xyz" },
+        };
+        String[] ih = { "Column", "Description" };
+        String[][] id = {
+            { "Name",              "SME full name (required)" },
+            { "Expertise Areas",   "Comma-separated skill areas" },
+            { "Bio",               "Short bio / background" },
+            { "Available From",    "Start date in YYYY-MM-DD" },
+            { "Available To",      "End date in YYYY-MM-DD" },
+            { "Days",              "Comma-separated days e.g. Monday,Wednesday" },
+            { "Mode",              "Online / Offline / Both" },
+            { "Location/Link",     "Meeting link for Online; venue for Offline" },
+        };
+        return buildWorkbook("SMEs", headers, data, ih, id);
     }
 
     public byte[] sampleSyllabusExcel() throws IOException {
