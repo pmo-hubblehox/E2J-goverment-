@@ -231,37 +231,42 @@ export default function AddCampusInvitePage() {
 
       {/* ── 1. Select Institute ── */}
       <SectionCard title="Select Institute *">
-        <div style={{ marginBottom: '16px' }}>
-          <input
-            placeholder="Search institute by name or city..."
-            value={instituteSearch}
-            onChange={e => setInstituteSearch(e.target.value)}
-            style={{ width: '100%', height: '44px', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '0 14px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-          />
-        </div>
-        {selectedInstitute && (
-          <div style={{ background: '#EEF2FF', border: '1.5px solid #3F41D1', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontWeight: 700, color: PRIMARY, fontSize: '14px' }}>{selectedInstitute.name}</div>
-              <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{selectedInstitute.city}, {selectedInstitute.state} · {selectedInstitute.type}</div>
+        {selectedInstitute ? (
+          /* Selected — show chip inside search bar, hide dropdown */
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: `1.5px solid #4F46E5`, borderRadius: '8px', padding: '8px 14px', background: '#EEF2FF', minHeight: '44px' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: 700, color: '#4F46E5', fontSize: '14px' }}>{selectedInstitute.name}</span>
+              <span style={{ fontSize: '12px', color: '#6366F1', marginLeft: '8px' }}>{selectedInstitute.city}, {selectedInstitute.state} · {selectedInstitute.type}</span>
             </div>
-            <button type="button" onClick={() => setSelectedInstituteId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '18px', padding: '4px' }}>×</button>
+            <button type="button" onClick={() => { setSelectedInstituteId(null); setInstituteSearch(''); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '20px', padding: '2px 6px', lineHeight: 1 }}>×</button>
           </div>
-        )}
-        <div style={{ maxHeight: '240px', overflowY: 'auto', border: `1px solid ${BORDER_LIGHT}`, borderRadius: '8px' }}>
-          {filteredInstitutes.length === 0 ? (
-            <div style={{ padding: '24px', textAlign: 'center', color: SUB, fontSize: '13px' }}>No approved institutes found</div>
-          ) : filteredInstitutes.map(inst => (
-            <div key={inst.id} onClick={() => { setSelectedInstituteId(inst.id); setInstituteSearch(''); }}
-              style={{ padding: '12px 16px', cursor: 'pointer', borderBottom: `1px solid ${BORDER_LIGHT}`, background: selectedInstituteId === inst.id ? '#EEF2FF' : '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '13px', color: TEXT }}>{inst.name}</div>
-                <div style={{ fontSize: '11px', color: SUB, marginTop: '2px' }}>{inst.city}, {inst.state} · {inst.type}</div>
-              </div>
-              {selectedInstituteId === inst.id && <span style={{ color: PRIMARY, fontWeight: 700 }}>✓</span>}
+        ) : (
+          /* Not selected — show search + dropdown */
+          <>
+            <div style={{ marginBottom: '12px' }}>
+              <input
+                placeholder="Search institute by name or city..."
+                value={instituteSearch}
+                onChange={e => setInstituteSearch(e.target.value)}
+                style={{ width: '100%', height: '44px', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '0 14px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
             </div>
-          ))}
-        </div>
+            <div style={{ maxHeight: '240px', overflowY: 'auto', border: `1px solid ${BORDER_LIGHT}`, borderRadius: '8px' }}>
+              {filteredInstitutes.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: SUB, fontSize: '13px' }}>No approved institutes found</div>
+              ) : filteredInstitutes.map(inst => (
+                <div key={inst.id} onClick={() => { setSelectedInstituteId(inst.id); setInstituteSearch(''); }}
+                  style={{ padding: '12px 16px', cursor: 'pointer', borderBottom: `1px solid ${BORDER_LIGHT}`, background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: TEXT }}>{inst.name}</div>
+                    <div style={{ fontSize: '11px', color: SUB, marginTop: '2px' }}>{inst.city}, {inst.state} · {inst.type}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </SectionCard>
 
       {/* ── 2. Program Details ── */}
