@@ -35,15 +35,22 @@ public class Institute {
     private String pincode;
     private String area;
     private String landmark;
+    @Column(columnDefinition = "TEXT")
     private String locationPin;
+    @Column(columnDefinition = "TEXT")
     private String address;
 
     // Documents
     private String accreditationBody;
+    @Column(columnDefinition = "TEXT")
     private String accreditationCertUrl;
+    @Column(columnDefinition = "TEXT")
     private String universityCertUrl;
+    @Column(columnDefinition = "TEXT")
     private String ratingDocUrl;
+    @Column(columnDefinition = "TEXT")
     private String ugcCertUrl;
+    @Column(columnDefinition = "TEXT")
     private String mouUrl;
 
     // Placement contacts (JSON serialized list)
