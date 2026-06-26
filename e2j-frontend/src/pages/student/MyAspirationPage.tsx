@@ -1037,6 +1037,22 @@ export default function MyAspirationPage() {
                     </p>
                   </div>
 
+                  {/* Counsellor Comment — if one exists */}
+                  {psychReport.counsellorComment && (
+                    <div style={{ background: '#EEF2FF', border: `1.5px solid #C7D2FE`, borderRadius: '16px', padding: '22px', marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>💬</div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT }}>Counsellor Review</div>
+                          <div style={{ fontSize: '11px', color: SUB }}>
+                            {psychReport.counsellorName ?? 'Your counsellor'}{psychReport.commentedAt ? ` · ${new Date(psychReport.commentedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#1E3A8A', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{psychReport.counsellorComment}</p>
+                    </div>
+                  )}
+
                   {/* Explore Courses CTA */}
                   <div style={{ background: '#EEF2FF', border: `1px solid #C7D2FE`, borderRadius: '16px', padding: '22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
                     <div>
@@ -1246,6 +1262,14 @@ export default function MyAspirationPage() {
                 <div style={{ marginTop: '14px', fontSize: '11px', color: '#94A3B8' }}>
                   Taken on {detailPsychReport.createdAt ? new Date(detailPsychReport.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                 </div>
+
+                {/* Counsellor comment preview */}
+                {detailPsychReport.counsellorComment && (
+                  <div style={{ marginTop: '14px', background: '#EEF2FF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #C7D2FE' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', marginBottom: '6px' }}>💬 Counsellor Review — {detailPsychReport.counsellorName ?? ''}</div>
+                    <p style={{ fontSize: '12px', color: '#1E3A8A', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>{detailPsychReport.counsellorComment}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

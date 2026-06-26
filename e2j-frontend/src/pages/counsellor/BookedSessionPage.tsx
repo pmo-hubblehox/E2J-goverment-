@@ -1,19 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import { Plus, Calendar, List, X, Star, ExternalLink, ChevronLeft, ChevronRight, Pencil, FileText } from 'lucide-react';
+import PsychometricReportView from '../../components/PsychometricReportView';
 
-const CATEGORY_NAMES: Record<string, string> = {
-  R: 'Realistic', I: 'Investigative', A: 'Artistic',
-  S: 'Social',    E: 'Enterprising',  C: 'Conventional',
-};
-const CATEGORY_COLORS: Record<string, { bar: string; text: string; bg: string }> = {
-  R: { bar: '#3B82F6', text: '#1D4ED8', bg: '#EFF6FF' },
-  I: { bar: '#3F41D1', text: '#3730A3', bg: '#EEF2FF' },
-  A: { bar: '#A855F7', text: '#7E22CE', bg: '#FDF4FF' },
-  S: { bar: '#22C55E', text: '#15803D', bg: '#F0FDF4' },
-  E: { bar: '#F97316', text: '#C2410C', bg: '#FFF7ED' },
-  C: { bar: '#94A3B8', text: '#475569', bg: '#F8FAFC' },
-};
 
 type SessionStatus = 'AVAILABLE' | 'UPCOMING' | 'COMPLETED' | 'CANCELLED';
 
@@ -48,160 +37,89 @@ interface StudentBooking {
     recommendedPaths: string[];
     createdAt: string;
   };
+  questionnaire?: Record<string, string>;
 }
 
 // ── Psychometric Report Modal ─────────────────────────────────────────────────
 function PsychometricReportModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
-  const r = booking.psychometricReport!;
-  const scores = r.scores ?? {};
-  const maxScore = Math.max(...Object.values(scores), 1);
-  const paths: string[] = r.recommendedPaths ?? [];
-  const PRIMARY = '#3F41D1';
-  const BORDER  = '#E2E8F0';
-  const TEXT    = '#1E293B';
-  const SUB     = '#64748B';
-
-  const [comment, setComment]   = useState('');
-  const [sending, setSending]   = useState(false);
-  const [sendMsg, setSendMsg]   = useState<{ ok: boolean; text: string } | null>(null);
-
-  // Sort scores descending
-  const sortedScores = Object.entries(scores).sort(([, a], [, b]) => (b as number) - (a as number));
-  const top1 = sortedScores[0]?.[0];
-  const top2 = sortedScores[1]?.[0];
-  const totalPossible = Object.keys(scores).length * 25;
-  const pct = totalPossible > 0 ? Math.round((r.totalScore / totalPossible) * 100) : 0;
-
-  const handleSend = async () => {
-    if (!comment.trim()) { setSendMsg({ ok: false, text: 'Please write a comment before sending.' }); return; }
-    setSending(true);
-    setSendMsg(null);
-    try {
-      await api.post(`/counsellor/bookings/${booking.id}/report-comment`, {
-        comment,
-        studentEmail: booking.studentEmail,
-        studentName: booking.studentName,
-      });
-      setSendMsg({ ok: true, text: `Report with your comments sent to ${booking.studentEmail}` });
-    } catch {
-      setSendMsg({ ok: false, text: 'Failed to send. Please try again.' });
-    } finally { setSending(false); }
-  };
+  const BORDER = '#E2E8F0';
+  const TEXT   = '#1E293B';
+  const SUB    = '#64748B';
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '720px', maxHeight: '92vh', overflowY: 'auto', padding: '28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '1100px', maxHeight: '92vh', overflowY: 'auto', padding: '28px 32px', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: TEXT }}>Psychometric Assessment Report</h3>
             <p style={{ margin: '4px 0 0', fontSize: '12px', color: SUB }}>
-              {booking.studentName} · {booking.studentEmail} · {r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+              {booking.studentName} · {booking.studentEmail}
             </p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB, marginLeft: '16px' }}><X size={20} /></button>
         </div>
 
-        {/* Summary strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
-          {[
-            { label: 'Strongest Interest', value: r.topInterests?.split(',')[0]?.trim() ?? '—', color: PRIMARY },
-            { label: 'Top Career Match',   value: r.topCareerMatch ?? '—',                       color: '#16A34A' },
-            { label: 'Overall Score',      value: `${r.totalScore} / ${totalPossible}`,          color: '#EA580C' },
-            { label: 'Score %',            value: `${pct}%`,                                     color: pct >= 60 ? '#16A34A' : pct >= 40 ? '#F59E0B' : '#EF4444' },
-          ].map(c => (
-            <div key={c.label} style={{ background: '#F8FAFC', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '12px 14px' }}>
-              <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>{c.label}</div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: c.color }}>{c.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Score interpretation */}
-        <div style={{ background: '#EEF2FF', borderRadius: '10px', padding: '14px 16px', marginBottom: '22px', fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>
-          <strong>Counsellor Insight:</strong> {booking.studentName.split(' ')[0]}'s strongest interest areas are <strong>{CATEGORY_NAMES[top1] ?? top1}</strong> and <strong>{CATEGORY_NAMES[top2] ?? top2}</strong>.
-          {pct >= 60 ? ' Their overall score indicates strong self-awareness — recommendations are highly reliable.' :
-           pct >= 40 ? ' Their score suggests moderate self-awareness. Career guidance can help refine the direction.' :
-                       ' Their interests are still forming — counselling is especially valuable at this stage.'}
-        </div>
-
-        {/* Interest Scores */}
-        <div style={{ marginBottom: '22px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            Interest Profile
-            <span style={{ fontSize: '11px', color: SUB, fontWeight: 400 }}>Holland RIASEC Model</span>
-          </div>
-          {sortedScores.map(([cat, score]) => {
-            const col = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['C'];
-            const pctBar = Math.round(((score as number) / maxScore) * 100);
-            return (
-              <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: col.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: col.text }}>{cat}</span>
-                </div>
-                <div style={{ width: '110px', fontSize: '12px', fontWeight: 600, color: TEXT, flexShrink: 0 }}>{CATEGORY_NAMES[cat] ?? cat}</div>
-                <div style={{ flex: 1, background: '#F1F5F9', borderRadius: '100px', height: '9px', overflow: 'hidden' }}>
-                  <div style={{ width: `${pctBar}%`, height: '9px', borderRadius: '100px', background: col.bar, transition: 'width 0.4s' }} />
-                </div>
-                <div style={{ width: '30px', textAlign: 'right' as const, fontSize: '12px', fontWeight: 700, color: col.bar, flexShrink: 0 }}>{score as number}</div>
-                {(cat === top1 || cat === top2) && (
-                  <span style={{ fontSize: '10px', color: col.text, background: col.bg, padding: '2px 7px', borderRadius: '10px', fontWeight: 700, flexShrink: 0 }}>
-                    {cat === top1 ? 'Top' : '2nd'}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Recommended Paths */}
-        {paths.length > 0 && (
-          <div style={{ marginBottom: '22px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '12px' }}>Recommended Career Paths</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {paths.map((p, i) => (
-                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: i === 0 ? '#EEF2FF' : '#F8FAFC', border: `1px solid ${i === 0 ? '#C7D2FE' : BORDER}`, borderRadius: '10px' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: i === 0 ? PRIMARY : '#94A3B8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
-                  <span style={{ fontSize: '13px', fontWeight: i === 0 ? 700 : 500, color: i === 0 ? PRIMARY : TEXT }}>{p}</span>
-                  {i === 0 && <span style={{ marginLeft: 'auto', fontSize: '10px', color: PRIMARY, fontWeight: 700, background: '#fff', padding: '2px 8px', borderRadius: '100px', border: `1px solid #C7D2FE`, flexShrink: 0 }}>Top Match</span>}
+        {/* Questionnaire Answers */}
+        {booking.questionnaire && Object.values(booking.questionnaire).some(v => v) && (
+          <div style={{ marginBottom: '24px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '16px 20px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400E', marginBottom: '10px' }}>Pre-Session Questionnaire</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {Object.entries(booking.questionnaire).filter(([, v]) => v).map(([q, a]) => (
+                <div key={q}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#B45309', marginBottom: '2px' }}>{q}</div>
+                  <div style={{ fontSize: '13px', color: '#78350F' }}>{a}</div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Counsellor Comment Section ── */}
-        <div style={{ borderTop: `2px solid ${BORDER}`, paddingTop: '22px', marginTop: '4px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '6px' }}>Add Your Comments</div>
-          <p style={{ margin: '0 0 12px', fontSize: '12px', color: SUB }}>
-            Write personalised feedback or guidance for {booking.studentName.split(' ')[0]}. This will be emailed to them at <strong>{booking.studentEmail}</strong>.
-          </p>
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            placeholder={`e.g. Based on your results, I recommend focusing on roles in ${CATEGORY_NAMES[top1] ?? 'your top interest area'}. Your score suggests you thrive in analytical and structured environments...`}
-            rows={5}
-            style={{ width: '100%', boxSizing: 'border-box' as const, border: `1.5px solid ${BORDER}`, borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: TEXT, resize: 'vertical' as const, outline: 'none', fontFamily: 'inherit', lineHeight: 1.6 }}
-          />
+        {/* Full Report — same as student sees */}
+        <PsychometricReportView
+          report={{
+            ...booking.psychometricReport!,
+            counsellorComment: undefined,
+          }}
+          bookingId={booking.id}
+          isCounsellor={true}
+        />
 
-          {sendMsg && (
-            <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 500, background: sendMsg.ok ? '#DCFCE7' : '#FEF2F2', color: sendMsg.ok ? '#16A34A' : '#DC2626', border: `1px solid ${sendMsg.ok ? '#86EFAC' : '#FECACA'}` }}>
-              {sendMsg.ok ? '✓ ' : '⚠ '}{sendMsg.text}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
-            <button onClick={onClose} style={{ padding: '10px 24px', border: `1px solid ${BORDER}`, borderRadius: '24px', background: '#fff', fontSize: '13px', color: SUB, cursor: 'pointer' }}>
-              Close
-            </button>
-            <button onClick={handleSend} disabled={sending}
-              style={{ padding: '10px 28px', border: 'none', borderRadius: '24px', background: sending ? '#94A3B8' : PRIMARY, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {sending ? 'Sending…' : 'Send Report to Student'}
-            </button>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+          <button onClick={onClose} style={{ padding: '10px 24px', border: `1px solid ${BORDER}`, borderRadius: '24px', background: '#fff', fontSize: '13px', color: SUB, cursor: 'pointer' }}>
+            Close
+          </button>
         </div>
+      </div>
+    </div>
+  );
+}
 
+function QuestionnaireModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
+  const TEXT = '#1E293B', BORDER = '#E2E8F0', SUB = '#64748B';
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '560px', maxHeight: '80vh', overflowY: 'auto', padding: '32px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          <div>
+            <div style={{ fontSize: '17px', fontWeight: 700, color: TEXT }}>{booking.studentName}</div>
+            <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{booking.studentEmail}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB, fontSize: '20px', lineHeight: 1 }}>✕</button>
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT, marginBottom: '12px' }}>Pre-Session Questionnaire</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {Object.entries(booking.questionnaire ?? {}).filter(([, v]) => v).map(([q, a]) => (
+            <div key={q} style={{ background: '#F8FAFC', borderRadius: '8px', padding: '12px 14px', border: `1px solid ${BORDER}` }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>{q}</div>
+              <div style={{ fontSize: '13px', color: TEXT }}>{a}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+          <button onClick={onClose} style={{ padding: '10px 24px', border: `1px solid ${BORDER}`, borderRadius: '24px', background: '#fff', fontSize: '13px', color: SUB, cursor: 'pointer' }}>Close</button>
+        </div>
       </div>
     </div>
   );
@@ -470,6 +388,7 @@ export default function BookedSessionPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingSession, setEditingSession] = useState<AvailSession | null>(null);
   const [viewingReport, setViewingReport] = useState<StudentBooking | null>(null);
+  const [viewingQuestionnaire, setViewingQuestionnaire] = useState<StudentBooking | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [sessions, setSessions] = useState<AvailSession[]>([]);
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
@@ -589,12 +508,20 @@ export default function BookedSessionPage() {
                       <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, background: b.status === 'CONFIRMED' ? '#DCFCE7' : b.status === 'COMPLETED' ? '#EEF2FF' : '#FEF2F2', color: b.status === 'CONFIRMED' ? '#16A34A' : b.status === 'COMPLETED' ? '#4F46E5' : '#DC2626' }}>{b.status}</span>
                     </td>
                     <td style={{ padding: '12px 14px' }}>
-                      {b.psychometricReport && (
-                        <button onClick={() => setViewingReport(b)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#EEF2FF', border: 'none', borderRadius: '6px', color: '#3F41D1', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          <FileText size={11} /> View Report
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {b.psychometricReport && (
+                          <button onClick={() => setViewingReport(b)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#EEF2FF', border: 'none', borderRadius: '6px', color: '#3F41D1', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            <FileText size={11} /> Psych Report
+                          </button>
+                        )}
+                        {b.questionnaire && Object.values(b.questionnaire).some(v => v) && (
+                          <button onClick={() => setViewingQuestionnaire(b)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#F0FDF4', border: 'none', borderRadius: '6px', color: '#16A34A', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            <FileText size={11} /> Questionnaire
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -747,6 +674,7 @@ export default function BookedSessionPage() {
 
       {showModal && <AddAvailabilityModal onClose={() => setShowModal(false)} onSaved={reload} />}
       {viewingReport && <PsychometricReportModal booking={viewingReport} onClose={() => setViewingReport(null)} />}
+      {viewingQuestionnaire && <QuestionnaireModal booking={viewingQuestionnaire} onClose={() => setViewingQuestionnaire(null)} />}
       {editingSession && (
         <EditAvailabilityModal
           session={editingSession}

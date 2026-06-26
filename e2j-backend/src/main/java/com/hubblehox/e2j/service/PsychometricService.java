@@ -260,6 +260,9 @@ public class PsychometricService {
         m.put("topCareerMatch", r.getTopCareerMatch());
         m.put("totalScore", r.getTotalScore());
         m.put("createdAt", r.getCreatedAt());
+        m.put("counsellorComment", r.getCounsellorComment());
+        m.put("counsellorName", r.getCounsellorName());
+        m.put("commentedAt", r.getCommentedAt());
         try {
             m.put("scores", objectMapper.readValue(r.getScoresJson(), Map.class));
             m.put("recommendedPaths", objectMapper.readValue(r.getRecommendedPathsJson(), List.class));

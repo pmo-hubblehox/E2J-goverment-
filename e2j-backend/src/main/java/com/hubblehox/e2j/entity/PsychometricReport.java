@@ -39,6 +39,16 @@ public class PsychometricReport {
     /** Total score out of 150 */
     private Integer totalScore;
 
+    /** Counsellor review comment visible to the student */
+    @Column(columnDefinition = "TEXT")
+    private String counsellorComment;
+
+    /** Name of counsellor who left the comment */
+    private String counsellorName;
+
+    /** When the comment was last updated */
+    private LocalDateTime commentedAt;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

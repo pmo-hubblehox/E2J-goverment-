@@ -76,20 +76,33 @@ function MonthYearPicker({ label, value, onChange, error, disabled, fieldId }: {
 }) {
   const parts = value ? value.split('-') : ['', ''];
   const mon = parts[0] ?? '';
-  const yr = parts[1] ?? '';
-  const update = (m: string, y: string) => { if (m && y) onChange(`${m}-${y}`); else onChange(''); };
+  const yr  = parts[1] ?? '';
+  const [localMon, setLocalMon] = useState(mon);
+  const [localYr,  setLocalYr]  = useState(yr);
+
+  useEffect(() => { setLocalMon(parts[0] ?? ''); setLocalYr(parts[1] ?? ''); }, [value]);
+
+  const handleMon = (m: string) => {
+    setLocalMon(m);
+    if (m && localYr) onChange(`${m}-${localYr}`); else onChange('');
+  };
+  const handleYr = (y: string) => {
+    setLocalYr(y);
+    if (localMon && y) onChange(`${localMon}-${y}`); else onChange('');
+  };
+
   return (
     <div style={{ ...floatWrap, display: 'flex', flexDirection: 'column', gap: '0' }}>
       <label style={{ ...floatLabel, zIndex: 1 }}>{label} <span style={{ color: '#EF4444' }}>*</span></label>
       <div style={{ display: 'flex', gap: '6px' }} id={fieldId}>
-        <select value={mon} disabled={disabled}
-          onChange={e => update(e.target.value, yr)}
+        <select value={localMon} disabled={disabled}
+          onChange={e => handleMon(e.target.value)}
           style={{ ...inputSt, flex: 1, appearance: 'none' as const, borderColor: error ? '#EF4444' : '#CBD5E1', background: disabled ? '#F8FAFC' : '#fff', color: disabled ? '#94A3B8' : '#1E293B', cursor: disabled ? 'not-allowed' : 'default' }}>
           <option value="">Month</option>
           {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
-        <select value={yr} disabled={disabled}
-          onChange={e => update(mon, e.target.value)}
+        <select value={localYr} disabled={disabled}
+          onChange={e => handleYr(e.target.value)}
           style={{ ...inputSt, flex: 1, appearance: 'none' as const, borderColor: error ? '#EF4444' : '#CBD5E1', background: disabled ? '#F8FAFC' : '#fff', color: disabled ? '#94A3B8' : '#1E293B', cursor: disabled ? 'not-allowed' : 'default' }}>
           <option value="">Year</option>
           {YEARS.map(y => <option key={y} value={y}>{y}</option>)}

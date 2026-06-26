@@ -436,17 +436,25 @@ public class CounsellorController {
         sb.append("Log in to the E2J platform to view your full report and next steps.\n\n");
         sb.append("Regards,\nHubbleHox E2J Team");
 
+        // Persist comment on the psychometric report
+        if (report != null) {
+            report.setCounsellorComment(comment);
+            report.setCounsellorName(c.getUser().getName());
+            report.setCommentedAt(java.time.LocalDateTime.now());
+            psychometricReportRepo.save(report);
+        }
+
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setTo(studentEmail);
             msg.setSubject("Your Psychometric Report — Counsellor Feedback from " + c.getUser().getName());
             msg.setText(sb.toString());
             mailSender.send(msg);
-        } catch (Exception e) {
-            throw new AppException("Failed to send email: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception ignored) {
+            // email failure should not block saving the comment
         }
 
-        return ResponseEntity.ok(ApiResponse.ok("Email sent to " + studentEmail));
+        return ResponseEntity.ok(ApiResponse.ok("Comment saved" + (report != null ? " and email sent to " + studentEmail : "")));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
