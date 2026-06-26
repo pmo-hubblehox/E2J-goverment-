@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 // import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -110,7 +109,7 @@ public class SkillGapService {
         // --- Groq-based skill gap analysis (replaces Python service call) ---
         try {
             String resumeText;
-            try (PDDocument doc = Loader.loadPDF(new ByteArrayInputStream(resumeBytes))) {
+            try (PDDocument doc = Loader.loadPDF(resumeBytes)) {
                 resumeText = new PDFTextStripper().getText(doc);
             }
             if (resumeText == null || resumeText.isBlank()) {
