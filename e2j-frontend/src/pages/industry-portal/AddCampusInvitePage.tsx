@@ -299,42 +299,44 @@ export default function AddCampusInvitePage() {
         {/* Roles table */}
         <div style={{ marginBottom: '20px' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>Job Roles &amp; Positions</span>
-          <div style={{ border: `1px solid ${BORDER_LIGHT}`, borderRadius: '8px', overflow: 'hidden', marginTop: '12px' }}>
+          <div style={{ border: `1px solid ${BORDER_LIGHT}`, borderRadius: '10px', overflow: 'hidden', marginTop: '12px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC' }}>
-                  {['Sr No', 'Job Role *', 'No. of Positions', 'CTC / Stipend', 'Action'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}` }}>{h}</th>
-                  ))}
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}`, width: '80px' }}>Sr No</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}` }}>Job Role *</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}`, width: '180px' }}>No. of Positions</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}` }}>CTC / Stipend</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: SUB, borderBottom: `1px solid ${BORDER_LIGHT}`, width: '70px' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {roles.map((r, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid ${BORDER_LIGHT}` }}>
-                    <td style={{ padding: '10px 14px', color: SUB, fontSize: '13px' }}>{String(i + 1).padStart(2, '0')}</td>
+                    <td style={{ padding: '12px 16px', color: PRIMARY, fontWeight: 700, fontSize: '13px' }}>{String(i + 1).padStart(2, '0')}</td>
                     <td style={{ padding: '8px 10px' }}>
                       <input value={r.role} onChange={e => updateRole(i, 'role', e.target.value)}
                         placeholder="e.g. Software Engineer"
                         style={{ width: '100%', height: '38px', border: `1.5px solid ${BORDER}`, borderRadius: '6px', padding: '0 12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                     </td>
-                    <td style={{ padding: '8px 10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <td style={{ padding: '8px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <button type="button" onClick={() => updateRole(i, 'positions', Math.max(1, r.positions - 1))}
-                          style={{ width: '28px', height: '28px', borderRadius: '50%', border: `1px solid ${BORDER}`, background: '#fff', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <span style={{ fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{String(r.positions).padStart(2, '0')}</span>
+                          style={{ width: '26px', height: '26px', borderRadius: '50%', border: `1.5px solid ${BORDER}`, background: '#fff', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#64748B' }}>−</button>
+                        <span style={{ fontWeight: 700, minWidth: '22px', textAlign: 'center', color: TEXT }}>{String(r.positions).padStart(2, '0')}</span>
                         <button type="button" onClick={() => updateRole(i, 'positions', r.positions + 1)}
-                          style={{ width: '28px', height: '28px', borderRadius: '50%', border: `1px solid ${BORDER}`, background: '#fff', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                          style={{ width: '26px', height: '26px', borderRadius: '50%', border: `1.5px solid ${BORDER}`, background: '#fff', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#64748B' }}>+</button>
                       </div>
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       <input value={r.ctc} onChange={e => updateRole(i, 'ctc', e.target.value)}
-                        placeholder="e.g. ₹6 LPA or ₹15,000/mo"
+                        placeholder="e.g. 600000"
                         style={{ width: '100%', height: '38px', border: `1.5px solid ${BORDER}`, borderRadius: '6px', padding: '0 12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                     </td>
-                    <td style={{ padding: '8px 10px' }}>
+                    <td style={{ padding: '8px 16px' }}>
                       <button type="button" onClick={() => removeRole(i)} disabled={roles.length === 1}
-                        style={{ padding: '6px', background: 'none', border: 'none', cursor: roles.length === 1 ? 'not-allowed' : 'pointer', color: roles.length === 1 ? '#CBD5E1' : '#94A3B8' }}>
-                        <Trash2 size={15} />
+                        style={{ padding: '7px', background: roles.length === 1 ? '#F8FAFC' : '#FEF2F2', border: 'none', borderRadius: '6px', cursor: roles.length === 1 ? 'not-allowed' : 'pointer', color: roles.length === 1 ? '#CBD5E1' : '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
@@ -342,9 +344,9 @@ export default function AddCampusInvitePage() {
               </tbody>
             </table>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
             <button type="button" onClick={addRole}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 20px', borderRadius: '100px', background: PRIMARY, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 22px', borderRadius: '8px', background: PRIMARY, color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
               <Plus size={14} /> Add Role
             </button>
           </div>
