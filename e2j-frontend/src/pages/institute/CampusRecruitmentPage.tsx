@@ -399,43 +399,68 @@ export default function CampusRecruitmentPage() {
       </div>
 
       {/* Time Slot */}
-      <p style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', margin: '0 0 14px' }}>Time Slot</p>
-      {timeSlots.map((slot, idx) => (
-        <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1.2 }}>
-            <span style={{ position: 'absolute', top: '-9px', left: '10px', background: '#fff', padding: '0 4px', fontSize: '11px', color: '#64748B' }}>Date *</span>
-            <div style={{ border: '1px solid #CBD5E1', borderRadius: '8px', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-              <input type="date" value={slot.date} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, date: e.target.value } : s))}
-                style={{ border: 'none', outline: 'none', fontSize: '14px', color: slot.date ? '#1E293B' : '#94A3B8', background: 'transparent', width: '100%' }} />
-              <Calendar size={16} style={{ color: '#94A3B8', flexShrink: 0 }} />
+      <div style={{ marginBottom: '6px' }}>
+        <p style={{ fontSize: '15px', fontWeight: 700, color: '#1E293B', margin: '0 0 12px' }}>Time Slots</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {timeSlots.map((slot, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#F8FAFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
+              {/* Slot number */}
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#4F46E5' }}>{idx + 1}</span>
+              </div>
+
+              {/* Date */}
+              <div style={{ flex: 1.4, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Date</span>
+                <div style={{ border: '1px solid #CBD5E1', borderRadius: '8px', padding: '9px 12px', display: 'flex', alignItems: 'center', gap: '8px', background: '#fff' }}>
+                  <input type="date" value={slot.date} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, date: e.target.value } : s))}
+                    style={{ border: 'none', outline: 'none', fontSize: '13px', color: slot.date ? '#1E293B' : '#94A3B8', background: 'transparent', width: '100%' }} />
+                  <Calendar size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
+                </div>
+              </div>
+
+              {/* From */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>From</span>
+                <div style={{ position: 'relative' }}>
+                  <select value={slot.from} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, from: e.target.value } : s))} style={{ ...selSt, paddingRight: '32px' }}>
+                    <option value="">Select</option>
+                    {TIME_OPTIONS.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none', fontSize: '11px' }}>▼</span>
+                </div>
+              </div>
+
+              {/* Arrow separator */}
+              <div style={{ flexShrink: 0, marginTop: '18px', color: '#94A3B8', fontSize: '16px' }}>→</div>
+
+              {/* To */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>To</span>
+                <div style={{ position: 'relative' }}>
+                  <select value={slot.to} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, to: e.target.value } : s))} style={{ ...selSt, paddingRight: '32px' }}>
+                    <option value="">Select</option>
+                    {TIME_OPTIONS.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none', fontSize: '11px' }}>▼</span>
+                </div>
+              </div>
+
+              {/* Delete */}
+              <button onClick={() => setTimeSlots(ts => ts.filter((_, i) => i !== idx))}
+                style={{ marginTop: '18px', width: '34px', height: '34px', borderRadius: '8px', background: '#FEE2E2', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={14} color="#DC2626" />
+              </button>
             </div>
-          </div>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <select value={slot.from} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, from: e.target.value } : s))} style={selSt}>
-              <option value="">9:00 Am</option>
-              {TIME_OPTIONS.map(t => <option key={t}>{t}</option>)}
-            </select>
-            <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none' }}>▼</span>
-          </div>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <select value={slot.to} onChange={e => setTimeSlots(ts => ts.map((s, i) => i === idx ? { ...s, to: e.target.value } : s))} style={selSt}>
-              <option value="">12:00 Pm</option>
-              {TIME_OPTIONS.map(t => <option key={t}>{t}</option>)}
-            </select>
-            <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none' }}>▼</span>
-          </div>
-          <button onClick={() => setTimeSlots(ts => ts.filter((_, i) => i !== idx))}
-            style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Trash2 size={15} color="#4F46E5" />
-          </button>
-          {idx === timeSlots.length - 1 && (
-            <button onClick={() => setTimeSlots(ts => [...ts, { date: '', from: '', to: '' }])}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#374151', fontSize: '13px', fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' }}>
-              <Plus size={14} /> Add
-            </button>
-          )}
+          ))}
         </div>
-      ))}
+
+        {/* Add slot button */}
+        <button onClick={() => setTimeSlots(ts => [...ts, { date: '', from: '', to: '' }])}
+          style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', background: '#EEF2FF', border: '1.5px dashed #C7D2FE', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', color: '#4F46E5', fontSize: '13px', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+          <Plus size={15} /> Add Time Slot
+        </button>
+      </div>
 
       {/* DB confirmation + Upload */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '20px', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
