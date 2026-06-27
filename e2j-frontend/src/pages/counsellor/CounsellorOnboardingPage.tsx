@@ -698,41 +698,72 @@ function StepCertification({ rows, setRows }: { rows: CertRow[]; setRows: (r: Ce
 }
 
 // ── Step 5: Skills ────────────────────────────────────────────────────────────
-const ALL_SKILLS = ['Network Security','Vulnerability Assessment','Penetration Testing','Python For Security','Ethical Hacking','Kali Linux','Wireshark','Firewall Management','Threat Analysis','Cryptography','Incident Response','Linux Administration','OWASP','Burp Suite','Metasploit'];
+const SKILL_GROUPS = [
+  {
+    group: 'Counselling & communication',
+    skills: ['Active listening', 'Empathy & rapport building', 'Motivational interviewing', 'Goal setting', 'Probing & questioning', 'Non-judgemental communication', 'Confidentiality & ethics', 'Parent / family counselling', 'Group counselling', 'Working with minors'],
+  },
+  {
+    group: 'Assessment & psychometrics',
+    skills: ['Psychometric test administration', 'Interest & aptitude assessment', 'Personality assessment (MBTI / Big Five)', 'DMIT', 'Strengths / skills inventory', 'Report interpretation'],
+  },
+  {
+    group: 'Career domains',
+    skills: ['IT / software / AI-ML', 'Engineering & technology', 'Medicine & healthcare', 'Commerce, finance & CA', 'Management / MBA', 'Law', 'Design & creative arts', 'Civil services & govt exams', 'Humanities & social sciences', 'Vocational & skill-based'],
+  },
+  {
+    group: 'Career planning tools',
+    skills: ['Resume / CV building', 'LinkedIn profile building', 'Interview preparation', 'College & course selection', 'Scholarship guidance', 'Study abroad counselling', 'Gap year planning', 'Career roadmap creation'],
+  },
+  {
+    group: 'Student support',
+    skills: ['Learning disabilities support', 'Stress & anxiety management', 'Time management coaching', 'Academic performance counselling', 'Peer relationship issues', 'Bullying & social challenges', 'Self-esteem building', 'Mindfulness & well-being'],
+  },
+];
+
+const ALL_SKILLS = SKILL_GROUPS.flatMap(g => g.skills);
 
 function StepSkills({ selected, setSelected, declared, setDeclared }: { selected: string[]; setSelected: (s: string[]) => void; declared: boolean; setDeclared: (v: boolean) => void }) {
   const [search, setSearch] = useState('');
 
   const toggle = (s: string) => setSelected(selected.includes(s) ? selected.filter(x => x !== s) : [...selected, s]);
-  const suggestions = ALL_SKILLS.filter(s => !selected.includes(s) && (search === '' || s.toLowerCase().includes(search.toLowerCase())));
+
+  const filteredGroups = SKILL_GROUPS.map(g => ({
+    ...g,
+    skills: g.skills.filter(s => search === '' || s.toLowerCase().includes(search.toLowerCase())),
+  })).filter(g => g.skills.length > 0);
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B' }}>Key Skills</span>
+        <span style={{ fontSize: '12px', color: '#64748B' }}>Step 5 of 5 · select all that apply — grouped so they're easy to find</span>
       </div>
       <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', marginBottom: '20px' }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '8px 14px', width: '200px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '8px 14px', width: '220px', marginBottom: '20px' }}>
         <Search size={15} style={{ color: '#94A3B8', flexShrink: 0 }} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Another Skill"
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search another skill"
           style={{ border: 'none', outline: 'none', fontSize: '13px', color: '#1E293B', background: 'transparent', width: '100%' }} />
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-        {selected.map(s => (
-          <span key={s} style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1.5px solid #4F46E5', borderRadius: '20px', padding: '5px 12px', fontSize: '13px', color: '#4F46E5', fontWeight: 500 }}>
-            {s}
-            <button onClick={() => toggle(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#4F46E5', display: 'flex', alignItems: 'center' }}><X size={12} /></button>
-          </span>
-        ))}
-        {suggestions.map(s => (
-          <span key={s} onClick={() => toggle(s)}
-            style={{ border: '1.5px solid #CBD5E1', borderRadius: '20px', padding: '5px 12px', fontSize: '13px', color: '#475569', cursor: 'pointer' }}>
-            {s}
-          </span>
-        ))}
-      </div>
+      {filteredGroups.map(({ group, skills }) => (
+        <div key={group} style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginBottom: '10px' }}>{group}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+            {skills.map(s => {
+              const isSelected = selected.includes(s);
+              return (
+                <span key={s} onClick={() => toggle(s)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', border: `1.5px solid ${isSelected ? '#4F46E5' : '#CBD5E1'}`, borderRadius: '20px', padding: '5px 12px', fontSize: '13px', color: isSelected ? '#4F46E5' : '#475569', fontWeight: isSelected ? 600 : 400, cursor: 'pointer', background: isSelected ? '#EEF2FF' : '#fff' }}>
+                  {s}
+                  {isSelected && <X size={12} color="#4F46E5" />}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '24px 0' }} />
 
