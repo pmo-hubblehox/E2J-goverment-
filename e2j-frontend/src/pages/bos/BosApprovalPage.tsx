@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { CheckCircle, XCircle, Clock, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -75,6 +76,7 @@ async function fetchAndParseSyllabus(url: string): Promise<Semester[]> {
 
 export default function BosApprovalPage() {
   const { user, clearAuth } = useAuth();
+  const navigate = useNavigate();
   const [approvals, setApprovals]   = useState<Approval[]>([]);
   const [selected,  setSelected]    = useState<Approval | null>(null);
   const [remarks,   setRemarks]     = useState('');
@@ -254,7 +256,7 @@ export default function BosApprovalPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '14px', color: SUB }}>{user?.name}</span>
-          <button onClick={clearAuth} style={{ border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', padding: '6px 16px', fontSize: '13px', cursor: 'pointer', color: TEXT }}>Logout</button>
+          <button onClick={() => { clearAuth(); navigate('/'); }} style={{ border: `1px solid ${BORDER}`, borderRadius: '8px', background: '#fff', padding: '6px 16px', fontSize: '13px', cursor: 'pointer', color: TEXT }}>Logout</button>
         </div>
       </div>
 

@@ -110,7 +110,7 @@ export default function CounsellorLayout() {
             </button>
             {locked && <div style={{ position: 'absolute', top: '2px', right: '2px', pointerEvents: 'none' }}><Lock size={10} color="#94A3B8" /></div>}
           </div>
-          <button onClick={() => { clearAuth(); navigate('/login/counsellor'); }}
+          <button onClick={() => { clearAuth(); navigate('/'); }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '56px', padding: '8px 4px', borderRadius: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}>
             <LogOut size={20} strokeWidth={1.8} />
             <span style={{ fontSize: '9px', fontWeight: 500, marginTop: '4px' }}>Logout</span>

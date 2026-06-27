@@ -60,7 +60,7 @@ export default function CounsellorPendingPage() {
         )}
 
         <button
-          onClick={() => { clearAuth(); navigate('/login/counsellor'); }}
+          onClick={() => { clearAuth(); navigate('/'); }}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto', background: 'none', border: '1px solid #E2E8F0', borderRadius: '24px', padding: '10px 28px', fontSize: '14px', color: '#64748B', cursor: 'pointer' }}>
           <LogOut size={15} /> Sign Out
         </button>
