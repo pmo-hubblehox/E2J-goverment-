@@ -39,6 +39,8 @@ interface StudentBooking {
     feedbackKeyObservations?: string;
     feedbackActionItems?: string;
     feedbackResourcesRecommended?: string;
+    feedbackRatingsJson?: string;
+    feedbackOutcomesJson?: string;
     counsellorComment?: string;
   };
   questionnaire?: Record<string, string>;
@@ -49,19 +51,26 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
   const TEXT = '#1E293B', SUB = '#64748B', BORDER = '#E2E8F0', PRIMARY = '#4F46E5';
   const [activeTab, setActiveTab] = useState<'questionnaire' | 'psychometric' | 'feedback'>('questionnaire');
 
+  const alreadySaved = !!(booking.psychometricReport?.feedbackKeyObservations || booking.psychometricReport?.feedbackActionItems || booking.psychometricReport?.counsellorComment);
+
+  // Pre-fill from saved report if exists, otherwise empty
+  const pr = booking.psychometricReport;
+  const savedRatings   = (() => { try { return pr?.feedbackRatingsJson  ? JSON.parse(pr.feedbackRatingsJson as any)  : null; } catch { return null; } })();
+  const savedOutcomes  = (() => { try { return pr?.feedbackOutcomesJson ? JSON.parse(pr.feedbackOutcomesJson as any) : null; } catch { return null; } })();
+  const savedActions   = (() => { try { return pr?.feedbackActionItems  ? JSON.parse(pr.feedbackActionItems)  : []; } catch { return []; } })();
+  const savedResources = (() => { try { return pr?.feedbackResourcesRecommended ? JSON.parse(pr.feedbackResourcesRecommended) : []; } catch { return []; } })();
+
   // Feedback form state
-  const [ratings, setRatings]     = useState({ sessionQuality: 0, engagement: 0, goalClarity: 0, receptiveness: 0 });
-  const [outcomes, setOutcomes]   = useState({ understoodProfile: '', actionPlan: '', resources: '', nextSteps: '' });
-  const [keyObs, setKeyObs]       = useState('');
-  const [actionItems, setActionItems] = useState<{ text: string }[]>([]);
+  const [ratings, setRatings]     = useState(savedRatings  ?? { sessionQuality: 0, engagement: 0, goalClarity: 0, receptiveness: 0 });
+  const [outcomes, setOutcomes]   = useState(savedOutcomes ?? { understoodProfile: '', actionPlan: '', resources: '', nextSteps: '' });
+  const [keyObs, setKeyObs]       = useState(pr?.feedbackKeyObservations ?? '');
+  const [actionItems, setActionItems] = useState<{ text: string }[]>(savedActions);
   const [newActionItem, setNewActionItem] = useState('');
-  const [resourcesList, setResourcesList] = useState<{ title: string; url: string }[]>([]);
+  const [resourcesList, setResourcesList] = useState<{ title: string; url: string }[]>(savedResources);
   const [newResTitle, setNewResTitle] = useState('');
   const [newResUrl, setNewResUrl]   = useState('');
-  const [comment, setComment]     = useState('');
+  const [comment, setComment]     = useState(pr?.counsellorComment ?? '');
   const [saving, setSaving]       = useState(false);
-
-  const alreadySaved = !!(booking.psychometricReport?.feedbackKeyObservations || booking.psychometricReport?.feedbackActionItems || booking.psychometricReport?.counsellorComment);
 
   const LIKERT_OPTS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
   const STAR_LABELS = ['', 'Poor', 'Below Average', 'Average', 'Good', 'Excellent'];
@@ -135,16 +144,7 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
           {/* TAB 3 — Counsellor Feedback */}
           {activeTab === 'feedback' && (
             <div>
-              {alreadySaved && (
-                <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '22px' }}>🔒</span>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#92400E' }}>Feedback already submitted</div>
-                    <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>Counsellor feedback cannot be edited once saved.</div>
-                  </div>
-                </div>
-              )}
-              {!alreadySaved && (<div>
+              {(<div style={{ pointerEvents: alreadySaved ? 'none' : 'auto', opacity: alreadySaved ? 0.85 : 1 }}>
 
               {/* Block 1: Star Ratings */}
               <div style={{ background: '#FAFBFF', border: `1px solid #E8ECF8`, borderRadius: '14px', padding: '20px 22px', marginBottom: '14px' }}>
@@ -270,19 +270,15 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
                       </div>
                     </div>
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Overall Review <span style={{ color: '#DC2626' }}>*</span></div>
-                    <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="A brief overall review — this is shown prominently to the student..."
-                      style={{ width: '100%', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '11px 14px', fontSize: '13px', color: TEXT, resize: 'vertical', outline: 'none', fontFamily: 'inherit', minHeight: '70px' }} />
-                  </div>
                 </div>
               </div>
 
-              {/* Save */}
-              <button onClick={handleSave} disabled={saving || (!comment && !keyObs)}
-                style={{ width: '100%', padding: '14px', background: saving ? '#A5B4FC' : PRIMARY, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
-                {saving ? 'Saving...' : '💾  Save Feedback'}
-              </button>
+              {!alreadySaved && (
+                <button onClick={handleSave} disabled={saving || !keyObs}
+                  style={{ width: '100%', padding: '14px', background: saving ? '#A5B4FC' : PRIMARY, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? 'Saving...' : '💾  Save Feedback'}
+                </button>
+              )}
             </div>)}
             </div>
           )}
