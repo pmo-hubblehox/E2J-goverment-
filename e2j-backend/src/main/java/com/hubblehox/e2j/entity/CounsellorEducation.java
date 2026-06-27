@@ -20,6 +20,7 @@ public class CounsellorEducation {
     private String degree;
     private String schoolName;
     private String major;
+    private String designation;
     private String yearOfPassing;
     private Boolean currentlyPursuing;
     private String percentageType;

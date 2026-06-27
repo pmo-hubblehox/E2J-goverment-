@@ -174,7 +174,7 @@ function SearchableSelect({ label, value, onChange, options, error, onBlur, fiel
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface EduRow { id: number; degree: string; school: string; major: string; year: string; percent: string }
+interface EduRow { id: number; degree: string; school: string; major: string; year: string; percent: string; designation: string }
 interface WorkRow { id: number; company: string; empType: string; location: string; locType: string; from: string; to: string }
 interface CertRow { id: number; certId: string; certName: string; institute: string; validTill: string; docName: string; docUrl: string }
 interface PersonalData {
@@ -322,7 +322,7 @@ function StepPersonal({ data, onChange, errors = {}, onFieldBlur, aadhaarUrl, se
 function StepEducation({ rows, setRows }: { rows: EduRow[]; setRows: (r: EduRow[]) => void }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<EduRow | null>(null);
-  const [form, setForm] = useState({ degree: '', school: '', major: '', year: '', pursuing: false, percentType: '', percent: '' });
+  const [form, setForm] = useState({ degree: '', school: '', major: '', year: '', pursuing: false, percentType: '', percent: '', designation: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const save = () => {
@@ -336,13 +336,13 @@ function StepEducation({ rows, setRows }: { rows: EduRow[]; setRows: (r: EduRow[
     setFormErrors({});
     const yearVal = form.pursuing ? 'Pursuing' : form.year;
     if (editing) {
-      setRows(rows.map(x => x.id === editing.id ? { ...x, degree: form.degree, school: form.school, major: form.major, year: yearVal, percent: form.percent } : x));
+      setRows(rows.map(x => x.id === editing.id ? { ...x, degree: form.degree, school: form.school, major: form.major, year: yearVal, percent: form.percent, designation: form.designation } : x));
     } else {
-      setRows([...rows, { id: Date.now(), degree: form.degree, school: form.school, major: form.major, year: yearVal, percent: form.percent }]);
+      setRows([...rows, { id: Date.now(), degree: form.degree, school: form.school, major: form.major, year: yearVal, percent: form.percent, designation: form.designation }]);
     }
     setShowModal(false);
     setEditing(null);
-    setForm({ degree: '', school: '', major: '', year: '', pursuing: false, percentType: '', percent: '' });
+    setForm({ degree: '', school: '', major: '', year: '', pursuing: false, percentType: '', percent: '', designation: '' });
   };
 
   return (
@@ -357,25 +357,26 @@ function StepEducation({ rows, setRows }: { rows: EduRow[]; setRows: (r: EduRow[
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
         <thead>
           <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-            {['Degree/Qualification','School/ University/College Name','Major/Subject/Specialization','Year Of Passing','Percentage / CGPA','Action'].map(h => (
+            {['Degree/Qualification','School/ University/College Name','Major/Subject/Specialization','Designation','Year Of Passing','Percentage / CGPA','Action'].map(h => (
               <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#64748B', fontWeight: 500 }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
-            <tr><td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>No education records yet. Click + Add to get started.</td></tr>
+            <tr><td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>No education records yet. Click + Add to get started.</td></tr>
           )}
           {rows.map(r => (
             <tr key={r.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
               <td style={{ padding: '12px' }}>{r.degree}</td>
               <td style={{ padding: '12px', color: '#64748B', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.school}</td>
               <td style={{ padding: '12px', color: '#64748B', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.major}</td>
+              <td style={{ padding: '12px', color: '#64748B' }}>{r.designation}</td>
               <td style={{ padding: '12px' }}>{r.year}</td>
               <td style={{ padding: '12px' }}>{r.percent}</td>
               <td style={{ padding: '12px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => { setEditing(r); setForm({ degree: r.degree, school: r.school, major: r.major, year: r.year, pursuing: false, percentType: '', percent: r.percent }); setShowModal(true); }}
+                  <button onClick={() => { setEditing(r); setForm({ degree: r.degree, school: r.school, major: r.major, year: r.year, pursuing: false, percentType: '', percent: r.percent, designation: r.designation ?? '' }); setShowModal(true); }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}><Pencil size={14} /></button>
                   <button onClick={() => setRows(rows.filter(x => x.id !== r.id))}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}><Trash2 size={14} /></button>
@@ -400,6 +401,9 @@ function StepEducation({ rows, setRows }: { rows: EduRow[]; setRows: (r: EduRow[
             <div style={rowFlex}>
               <FloatInput label="School/University/College Name" value={form.school} onChange={v => { setForm(f => ({ ...f, school: v })); setFormErrors(e => ({ ...e, school: '' })); }}
                 error={formErrors.school} fieldId="edu-field-school" />
+              <FloatInput label="Designation" value={form.designation} onChange={v => setForm(f => ({ ...f, designation: v }))} fieldId="edu-field-designation" />
+            </div>
+            <div style={rowFlex}>
               <div style={{ ...floatWrap, position: 'relative' }}>
                 <select id="edu-field-year" value={form.year} disabled={form.pursuing}
                   onChange={v => { setForm(f => ({ ...f, year: v.target.value })); setFormErrors(e => ({ ...e, year: '' })); }}
@@ -889,7 +893,7 @@ export default function CounsellorOnboardingPage() {
       }
       const eduData = eRes?.data?.data ?? [];
       const eduList = Array.isArray(eduData) ? eduData : (eduData.content ?? []);
-      setEduRows(eduList.map((e: any) => ({ id: e.id, degree: e.degree ?? '', school: e.schoolName ?? '', major: e.major ?? '', year: e.yearOfPassing ?? '', percent: String(e.percentageValue ?? '') })));
+      setEduRows(eduList.map((e: any) => ({ id: e.id, degree: e.degree ?? '', school: e.schoolName ?? '', major: e.major ?? '', designation: e.designation ?? '', year: e.yearOfPassing ?? '', percent: String(e.percentageValue ?? '') })));
       const wrkData = wRes?.data?.data ?? [];
       const wrkList = Array.isArray(wrkData) ? wrkData : (wrkData.content ?? []);
       setWorkRows(wrkList.map((w: any) => ({ id: w.id, company: w.companyName ?? '', empType: w.employmentType ?? '', location: w.location ?? '', locType: w.locationType ?? '', from: w.fromDate ?? '', to: w.currentlyWorking ? 'Currently Working' : (w.toDate ?? '') })));
@@ -977,6 +981,7 @@ export default function CounsellorOnboardingPage() {
           degree: e.degree,
           schoolName: e.school,
           major: e.major,
+          designation: e.designation,
           yearOfPassing: e.year,
           percentageValue: parseFloat(e.percent) || null,
         }).catch(() => {});

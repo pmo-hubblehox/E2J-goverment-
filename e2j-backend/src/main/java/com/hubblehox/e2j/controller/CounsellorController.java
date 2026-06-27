@@ -175,6 +175,7 @@ public class CounsellorController {
                 .degree((String) body.get("degree"))
                 .schoolName((String) body.get("schoolName"))
                 .major((String) body.get("major"))
+                .designation((String) body.get("designation"))
                 .yearOfPassing((String) body.get("yearOfPassing"))
                 .currentlyPursuing(Boolean.TRUE.equals(body.get("currentlyPursuing")))
                 .percentageType((String) body.get("percentageType"))
@@ -193,6 +194,7 @@ public class CounsellorController {
         if (body.containsKey("degree"))          e.setDegree((String) body.get("degree"));
         if (body.containsKey("schoolName"))      e.setSchoolName((String) body.get("schoolName"));
         if (body.containsKey("major"))           e.setMajor((String) body.get("major"));
+        if (body.containsKey("designation"))     e.setDesignation((String) body.get("designation"));
         if (body.containsKey("yearOfPassing"))   e.setYearOfPassing((String) body.get("yearOfPassing"));
         if (body.containsKey("percentageValue")) e.setPercentageValue(body.get("percentageValue") instanceof Number n ? n.doubleValue() : null);
         return ResponseEntity.ok(ApiResponse.ok(educationRepo.save(e), "Updated"));
