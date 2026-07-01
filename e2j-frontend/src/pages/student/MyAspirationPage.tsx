@@ -1427,7 +1427,7 @@ export default function MyAspirationPage() {
             </div>
             <div style={{ padding: '24px 32px' }}>
               {[
-                { icon: '🔇', title: 'Find a quiet place', desc: 'Sit in a room with minimal background noise. Close doors and windows if needed.' },
+                { icon: '🔇', title: 'Take the interview in a quiet place', desc: 'Sit in a silent room with no background noise. Close doors and windows, and ask others around you not to disturb.' },
                 { icon: '📷', title: 'Camera & microphone must be on', desc: 'Allow browser permissions for camera and mic. Both must be active throughout the session.' },
                 { icon: '💡', title: 'Good lighting', desc: 'Make sure your face is clearly visible. Natural front-facing light works best.' },
                 { icon: '🎧', title: 'Use earphones if possible', desc: 'Earphones reduce echo and help you hear questions clearly.' },
