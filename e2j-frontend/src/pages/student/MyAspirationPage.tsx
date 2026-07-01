@@ -119,6 +119,7 @@ export default function MyAspirationPage() {
   const [psychReport, setPsychReport]   = useState<any>(null);
   const [savedAspirationId, setSavedAspirationId] = useState<number | null>(null);
   const [reportTab, setReportTab]       = useState<'psychometric' | 'feedback'>('psychometric');
+  const [showInterviewInstructions, setShowInterviewInstructions] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -1403,13 +1404,60 @@ export default function MyAspirationPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '100px', border: 'none', background: '#7C3AED', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 <Zap size={14} /> Analyse Skill Gap
               </button>
-              <button onClick={() => navigate('/student/interview/session')}
+              <button onClick={() => setShowInterviewInstructions(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                 Start Interview <ChevronRight size={14} />
               </button>
             </div>
           </>
         )}
+
+      {/* Interview Instructions Modal */}
+      {showInterviewInstructions && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '520px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            <div style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #7C3AED 100%)`, padding: '28px 32px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '12px', padding: '8px' }}>
+                  <Briefcase size={22} color="#fff" />
+                </div>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#fff' }}>Before You Begin</h2>
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.8)' }}>Make sure you are ready for your AI interview session</p>
+            </div>
+            <div style={{ padding: '24px 32px' }}>
+              {[
+                { icon: '🔇', title: 'Find a quiet place', desc: 'Sit in a room with minimal background noise. Close doors and windows if needed.' },
+                { icon: '📷', title: 'Camera & microphone must be on', desc: 'Allow browser permissions for camera and mic. Both must be active throughout the session.' },
+                { icon: '💡', title: 'Good lighting', desc: 'Make sure your face is clearly visible. Natural front-facing light works best.' },
+                { icon: '🎧', title: 'Use earphones if possible', desc: 'Earphones reduce echo and help you hear questions clearly.' },
+                { icon: '🌐', title: 'Stable internet connection', desc: 'Use Wi-Fi or a strong data connection. Do not switch networks mid-session.' },
+                { icon: '⏱️', title: 'Set aside uninterrupted time', desc: 'The interview takes 10–15 minutes. Do not switch tabs or close the window.' },
+                { icon: '👔', title: 'Dress professionally', desc: 'Treat this like a real interview — dress appropriately and sit upright.' },
+              ].map(item => (
+                <div key={item.title} style={{ display: 'flex', gap: '14px', marginBottom: '16px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '20px', minWidth: '28px', marginTop: '1px' }}>{item.icon}</span>
+                  <div>
+                    <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{item.title}</p>
+                    <p style={{ margin: 0, fontSize: '12px', color: SUB, lineHeight: '1.5' }}>{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '0 32px 28px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowInterviewInstructions(false)}
+                style={{ padding: '10px 24px', borderRadius: '100px', border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: '13px', fontWeight: 500, color: SUB, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => { setShowInterviewInstructions(false); navigate('/student/interview/session'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 28px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                I'm Ready — Start <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );
