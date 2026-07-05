@@ -52,4 +52,14 @@ public class StudentJobController {
             @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(jobApplicationService.hasApplied(ud.getUsername(), id)));
     }
+
+    @PatchMapping("/applications/{id}/offer/respond")
+    public ResponseEntity<ApiResponse<JobApplicationDto.OfferLetterDto>> respondToOffer(
+            @AuthenticationPrincipal UserDetails ud,
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                jobApplicationService.respondToOffer(ud.getUsername(), id, body.get("response")),
+                "Response recorded"));
+    }
 }

@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "job_applications",
@@ -28,11 +26,9 @@ public class JobApplication {
     private String resumeUrl;
     private String resumeFileName;
 
-    // Snapshot of student info at time of application
     @Column(columnDefinition = "TEXT")
-    private String profileSnapshot; // JSON snapshot
+    private String profileSnapshot;
 
-    // Answers to custom questions: stored as JSON array of {question, answer}
     @Column(columnDefinition = "TEXT")
     private String questionAnswers;
 
@@ -40,9 +36,39 @@ public class JobApplication {
     @Builder.Default
     private Stage stage = Stage.APPLIED;
 
+    // ── Interview scheduling ──────────────────────────────────
+    private LocalDateTime interviewScheduledAt;
+    private String interviewMode;           // Online / Offline
+    private String interviewLink;
+    private String interviewVenue;
+    private Integer interviewDurationMinutes;
+    private String interviewerNames;
+    @Column(columnDefinition = "TEXT")
+    private String interviewInstructions;
+    @Builder.Default
+    private Integer currentRound = 0;       // increments each time interview is scheduled
+
+    // ── Interview feedback ────────────────────────────────────
+    private Integer feedbackOverallRating;
+    private Integer feedbackTechRating;
+    private Integer feedbackCommRating;
+    private Integer feedbackProblemRating;
+    private Integer feedbackCultureRating;
+    @Column(columnDefinition = "TEXT")
+    private String feedbackStrengths;
+    @Column(columnDefinition = "TEXT")
+    private String feedbackConcerns;
+    @Column(columnDefinition = "TEXT")
+    private String feedbackNotes;
+
+    // ── Rejection ─────────────────────────────────────────────
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+    @Builder.Default
+    private Boolean showRejectionToCandidate = false;
+
     @Column(updatable = false)
     private LocalDateTime appliedAt;
-
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -55,6 +81,6 @@ public class JobApplication {
     protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 
     public enum Stage {
-        APPLIED, SHORTLISTED, INTERVIEW_ROUND_1, INTERVIEW_ROUND_2, OFFERED, REJECTED
+        APPLIED, SHORTLISTED, INTERVIEW_SCHEDULED, OFFERED, REJECTED
     }
 }

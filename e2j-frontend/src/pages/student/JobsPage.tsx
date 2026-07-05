@@ -424,6 +424,8 @@ export default function JobsPage() {
   const [applyJob, setApplyJob] = useState<ApiJob | null>(null);
   const [successJob, setSuccessJob] = useState<ApiJob | null>(null);
   const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+  const [offerResponding, setOfferResponding] = useState<number | null>(null);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
   const [studentSkills, setStudentSkills] = useState<string[]>([]);
   const [aspirationRoles, setAspirationRoles] = useState<string[]>([]);
@@ -452,7 +454,11 @@ export default function JobsPage() {
       .finally(() => setLoading(false));
 
     api.get('/student/applications')
-      .then(r => setAppliedIds(new Set((r.data?.data ?? []).map((a: any) => Number(a.jobId)))))
+      .then(r => {
+        const apps = r.data?.data ?? [];
+        setMyApplications(apps);
+        setAppliedIds(new Set(apps.map((a: any) => Number(a.jobId))));
+      })
       .catch(() => {});
 
     api.get('/student/profile/full')
@@ -600,9 +606,136 @@ export default function JobsPage() {
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', background: '#F8FAFC' }}>
-        {loading ? (
+        {/* ── Applied Jobs — special timeline view ── */}
+        {tab === 'applied' && !loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {myApplications.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px', gap: '12px', color: '#94A3B8' }}>
+                <Briefcase size={40} strokeWidth={1.2} />
+                <p style={{ fontSize: '14px', margin: 0, fontWeight: 500, color: SUB }}>No applications yet</p>
+                <button onClick={() => setTab('all')} style={{ fontSize: '13px', color: PRIMARY, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Browse all jobs</button>
+              </div>
+            ) : myApplications.map((app: any) => {
+              const STAGE_ORDER = ['APPLIED', 'SHORTLISTED', 'INTERVIEW_SCHEDULED', 'OFFERED'];
+              const currentIdx = STAGE_ORDER.indexOf(app.stage);
+              const isRejected = app.stage === 'REJECTED';
+              const stageLabelMap: Record<string, string> = { APPLIED: 'Applied', SHORTLISTED: 'Shortlisted', INTERVIEW_SCHEDULED: `Round ${app.currentRound || 1}`, OFFERED: 'Offered' };
+              const stageColorMap: Record<string, string> = { APPLIED: '#64748B', SHORTLISTED: '#7C3AED', INTERVIEW_SCHEDULED: '#1D4ED8', OFFERED: '#15803D', REJECTED: '#B91C1C' };
+              const stageBgMap: Record<string, string> = { APPLIED: '#F1F5F9', SHORTLISTED: '#EDE9FE', INTERVIEW_SCHEDULED: '#DBEAFE', OFFERED: '#DCFCE7', REJECTED: '#FEE2E2' };
+
+              return (
+                <div key={app.id} style={{ background: '#fff', borderRadius: '14px', border: `1px solid ${BORDER}`, padding: '20px 24px' }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                      <CompanyLogo company={app.companyName} size={44} />
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>{app.jobRole}</div>
+                        <div style={{ fontSize: '13px', color: SUB }}>{app.companyName}{app.location ? ` · ${app.location}` : ''}</div>
+                        <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>Applied {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>
+                      </div>
+                    </div>
+                    <span style={{ padding: '4px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, color: stageColorMap[app.stage] ?? '#64748B', background: stageBgMap[app.stage] ?? '#F1F5F9', whiteSpace: 'nowrap' as const }}>
+                      {isRejected ? 'Not Selected' : stageLabelMap[app.stage] ?? app.stage}
+                    </span>
+                  </div>
+
+                  {/* Timeline — only for non-rejected */}
+                  {!isRejected && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      {STAGE_ORDER.map((s, i) => {
+                        const done = i < currentIdx;
+                        const active = i === currentIdx;
+                        const label = s === 'INTERVIEW_SCHEDULED' ? (app.currentRound > 0 ? `Round ${app.currentRound}` : 'Interview') : stageLabelMap[s];
+                        return (
+                          <div key={s} style={{ display: 'flex', alignItems: 'center', flex: i < STAGE_ORDER.length - 1 ? 1 : 'none' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, background: done ? PRIMARY : active ? '#EEF2FF' : '#F1F5F9', color: done ? '#fff' : active ? PRIMARY : '#94A3B8', border: active ? `2px solid ${PRIMARY}` : 'none', flexShrink: 0 }}>
+                                {done ? '✓' : i + 1}
+                              </div>
+                              <span style={{ fontSize: '10px', color: done || active ? PRIMARY : '#94A3B8', fontWeight: done || active ? 600 : 400, whiteSpace: 'nowrap' as const, textAlign: 'center' as const }}>{label}</span>
+                            </div>
+                            {i < STAGE_ORDER.length - 1 && <div style={{ flex: 1, height: '2px', background: done ? PRIMARY : '#E2E8F0', margin: '0 4px', marginBottom: '16px' }} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Interview scheduled card */}
+                  {app.stage === 'INTERVIEW_SCHEDULED' && app.interviewScheduledAt && (
+                    <div style={{ background: '#EEF2FF', border: `1.5px solid ${PRIMARY}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: PRIMARY, marginBottom: '8px' }}>📅 Interview — Round {app.currentRound}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{new Date(app.interviewScheduledAt).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {new Date(app.interviewScheduledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontSize: '12px', color: SUB, marginTop: '4px' }}>{app.interviewMode}{app.interviewDurationMinutes ? ` · ${app.interviewDurationMinutes} mins` : ''}</div>
+                      {app.interviewerNames && <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}>Interviewer: {app.interviewerNames}</div>}
+                      {app.interviewInstructions && <div style={{ fontSize: '12px', color: '#374151', marginTop: '3px', fontStyle: 'italic' }}>"{app.interviewInstructions}"</div>}
+                      {app.interviewLink && (
+                        <a href={app.interviewLink} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '10px', padding: '7px 16px', background: PRIMARY, color: '#fff', borderRadius: '100px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                          🔗 Join Meeting
+                        </a>
+                      )}
+                      {app.interviewVenue && <div style={{ fontSize: '12px', color: SUB, marginTop: '6px' }}>📍 {app.interviewVenue}</div>}
+                    </div>
+                  )}
+
+                  {/* Offer letter card */}
+                  {app.stage === 'OFFERED' && app.offerLetter && (
+                    <div style={{ border: `2px solid ${app.offerLetter.status === 'ACCEPTED' ? '#86EFAC' : app.offerLetter.status === 'DECLINED' ? '#FCA5A5' : PRIMARY}`, borderRadius: '12px', padding: '16px 20px', background: app.offerLetter.status === 'ACCEPTED' ? '#F0FDF4' : app.offerLetter.status === 'DECLINED' ? '#FEF2F2' : '#F5F7FF' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div>
+                          <div style={{ fontSize: '12px', color: SUB, fontWeight: 600, marginBottom: '2px' }}>OFFER LETTER</div>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>{app.offerLetter.designation}</div>
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: app.offerLetter.status === 'ACCEPTED' ? '#DCFCE7' : app.offerLetter.status === 'DECLINED' ? '#FEE2E2' : '#EEF2FF', color: app.offerLetter.status === 'ACCEPTED' ? '#15803D' : app.offerLetter.status === 'DECLINED' ? '#B91C1C' : PRIMARY }}>
+                          {app.offerLetter.status}
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                        {[['CTC', app.offerLetter.ctc ? `₹${(app.offerLetter.ctc / 100000).toFixed(1)}L` : '—'], ['Joining', app.offerLetter.joiningDate ? new Date(app.offerLetter.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'], ['Mode', app.offerLetter.workMode || '—']].map(([k, v]) => (
+                          <div key={k} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '8px', padding: '8px 10px' }}>
+                            <div style={{ fontSize: '10px', color: SUB, marginBottom: '2px' }}>{k}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {app.offerLetter.status === 'PENDING' && (
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button disabled={offerResponding === app.id} onClick={async () => {
+                            setOfferResponding(app.id);
+                            try { const r = await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'ACCEPTED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'ACCEPTED' } } : a)); } catch { alert('Failed to respond to offer.'); } finally { setOfferResponding(null); }
+                          }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#16A34A', color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: offerResponding === app.id ? 0.6 : 1 }}>✓ Accept Offer</button>
+                          <button disabled={offerResponding === app.id} onClick={async () => {
+                            setOfferResponding(app.id);
+                            try { await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'DECLINED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'DECLINED' } } : a)); } catch { alert('Failed to respond.'); } finally { setOfferResponding(null); }
+                          }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#fff', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>✗ Decline</button>
+                        </div>
+                      )}
+                      {app.offerLetter.offerExpiry && app.offerLetter.status === 'PENDING' && (
+                        <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '8px' }}>Offer expires {new Date(app.offerLetter.offerExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Rejection message */}
+                  {app.stage === 'REJECTED' && app.rejectionMessage && (
+                    <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '10px', padding: '12px 14px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#7F1D1D', marginBottom: '4px' }}>Message from {app.companyName}</div>
+                      <div style={{ fontSize: '13px', color: '#991B1B', lineHeight: '1.6' }}>{app.rejectionMessage}</div>
+                    </div>
+                  )}
+                  {app.stage === 'REJECTED' && !app.rejectionMessage && (
+                    <div style={{ fontSize: '12px', color: '#94A3B8' }}>No additional details provided by the employer.</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {tab !== 'applied' && loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: SUB, fontSize: '14px' }}>Loading…</div>
-        ) : filteredJobs.length === 0 ? (
+        ) : tab !== 'applied' && filteredJobs.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px', gap: '12px', color: '#94A3B8' }}>
             <Briefcase size={40} strokeWidth={1.2} />
             <p style={{ fontSize: '14px', margin: 0, fontWeight: 500, color: SUB }}>

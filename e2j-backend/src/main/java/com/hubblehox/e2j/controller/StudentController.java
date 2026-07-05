@@ -46,8 +46,8 @@ public class StudentController {
         long jobsApplied        = applications.stream().filter(a -> a.getJobPosting() != null && a.getJobPosting().getPostingType() == JobPosting.PostingType.JOB).count();
         long internshipsApplied = applications.stream().filter(a -> a.getJobPosting() != null && a.getJobPosting().getPostingType() == JobPosting.PostingType.INTERNSHIP).count();
         long offered            = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.OFFERED).count();
-        long shortlisted        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.SHORTLISTED || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_1 || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_2).count();
-        long interviewed        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_1 || a.getStage() == JobApplication.Stage.INTERVIEW_ROUND_2).count();
+        long shortlisted        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.SHORTLISTED || a.getStage() == JobApplication.Stage.INTERVIEW_SCHEDULED).count();
+        long interviewed        = applications.stream().filter(a -> a.getStage() == JobApplication.Stage.INTERVIEW_SCHEDULED).count();
 
         List<Map<String, Object>> recentApps = applications.stream().limit(5).map(a -> {
             Map<String, Object> m = new LinkedHashMap<>();
