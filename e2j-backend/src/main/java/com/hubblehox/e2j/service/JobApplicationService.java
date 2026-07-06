@@ -156,6 +156,15 @@ public class JobApplicationService {
         app.setInterviewInstructions(req.getInstructions());
         app.setCurrentRound(app.getCurrentRound() + 1);
         app.setStage(JobApplication.Stage.INTERVIEW_SCHEDULED);
+        // clear previous round's feedback so the new round starts clean
+        app.setFeedbackOverallRating(null);
+        app.setFeedbackTechRating(null);
+        app.setFeedbackCommRating(null);
+        app.setFeedbackProblemRating(null);
+        app.setFeedbackCultureRating(null);
+        app.setFeedbackStrengths(null);
+        app.setFeedbackConcerns(null);
+        app.setFeedbackNotes(null);
         return JobApplicationDto.ApplicantResponse.from(appRepo.save(app),
                 offerRepo.findByJobApplication(app).orElse(null));
     }

@@ -430,6 +430,26 @@ export default function JobsPage() {
   const [studentSkills, setStudentSkills] = useState<string[]>([]);
   const [aspirationRoles, setAspirationRoles] = useState<string[]>([]);
 
+  const fetchApplications = () => {
+    api.get('/student/applications')
+      .then(r => {
+        const apps = r.data?.data ?? [];
+        setMyApplications(apps);
+        setAppliedIds(new Set(apps.map((a: any) => Number(a.jobId))));
+      })
+      .catch(() => {});
+  };
+
+  // Poll every 30s + refresh when tab regains focus
+  useEffect(() => {
+    fetchApplications();
+    const interval = setInterval(fetchApplications, 30000);
+    const onFocus = () => fetchApplications();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchApplications(); });
+    return () => { clearInterval(interval); window.removeEventListener('focus', onFocus); };
+  }, []);
+
   useEffect(() => {
     api.get('/student/jobs')
       .then(r => {
@@ -452,14 +472,6 @@ export default function JobsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-
-    api.get('/student/applications')
-      .then(r => {
-        const apps = r.data?.data ?? [];
-        setMyApplications(apps);
-        setAppliedIds(new Set(apps.map((a: any) => Number(a.jobId))));
-      })
-      .catch(() => {});
 
     api.get('/student/profile/full')
       .then(r => {
@@ -546,11 +558,60 @@ export default function JobsPage() {
   );
 
   if (subSection === 'interview') {
+    const scheduledInterviews = myApplications.filter((a: any) => a.stage === 'INTERVIEW_SCHEDULED' && a.interviewScheduledAt);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <NavBar />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#94A3B8' }}>
-          <Calendar size={40} strokeWidth={1.2} /><p style={{ fontSize: '14px', margin: 0 }}>No interviews scheduled</p>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+          {scheduledInterviews.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', color: '#94A3B8', height: '300px' }}>
+              <Calendar size={40} strokeWidth={1.2} /><p style={{ fontSize: '14px', margin: 0 }}>No interviews scheduled</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '680px' }}>
+              {scheduledInterviews.map((app: any) => {
+                const evaluated = app.feedbackReceived === true;
+                return (
+                  <div key={app.id ?? app.applicationId} style={{ background: '#fff', border: `1.5px solid ${evaluated ? '#86EFAC' : BORDER}`, borderRadius: '14px', padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: TEXT }}>{app.jobRole}</div>
+                        <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{app.companyName} · {app.department}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                        <span style={{ background: '#DBEAFE', color: '#1D4ED8', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px' }}>Round {app.currentRound}</span>
+                        {evaluated && <span style={{ background: '#DCFCE7', color: '#15803D', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px' }}>✓ Selected</span>}
+                      </div>
+                    </div>
+                    <div style={{ background: evaluated ? '#F0FDF4' : '#EEF2FF', border: `1px solid ${evaluated ? '#86EFAC' : '#C7D2FE'}`, borderRadius: '10px', padding: '14px 16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT, marginBottom: '6px' }}>
+                        📅 {new Date(app.interviewScheduledAt).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {new Date(app.interviewScheduledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div style={{ fontSize: '12px', color: SUB }}>{app.interviewMode}{app.interviewDurationMinutes ? ` · ${app.interviewDurationMinutes} mins` : ''}</div>
+                      {app.interviewerNames && <div style={{ fontSize: '12px', color: SUB, marginTop: '4px' }}>👤 Interviewer: {app.interviewerNames}</div>}
+                      {app.interviewInstructions && <div style={{ fontSize: '12px', color: '#374151', marginTop: '4px', fontStyle: 'italic' }}>"{app.interviewInstructions}"</div>}
+                      {app.interviewVenue && <div style={{ fontSize: '12px', color: SUB, marginTop: '4px' }}>📍 {app.interviewVenue}</div>}
+                      {!evaluated && app.interviewLink && (
+                        <a href={app.interviewLink} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '12px', padding: '8px 18px', background: PRIMARY, color: '#fff', borderRadius: '100px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                          🔗 Join Meeting
+                        </a>
+                      )}
+                      {evaluated && (
+                        <div style={{ marginTop: '10px', padding: '10px 14px', background: '#DCFCE7', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '15px' }}>✅</span>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#15803D' }}>Selected — Round {app.currentRound} Cleared</div>
+                            <div style={{ fontSize: '11px', color: '#166534', marginTop: '2px' }}>The employer will schedule your next round shortly.</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -619,7 +680,10 @@ export default function JobsPage() {
               const STAGE_ORDER = ['APPLIED', 'SHORTLISTED', 'INTERVIEW_SCHEDULED', 'OFFERED'];
               const currentIdx = STAGE_ORDER.indexOf(app.stage);
               const isRejected = app.stage === 'REJECTED';
-              const stageLabelMap: Record<string, string> = { APPLIED: 'Applied', SHORTLISTED: 'Shortlisted', INTERVIEW_SCHEDULED: `Round ${app.currentRound || 1}`, OFFERED: 'Offered' };
+              const hasFeedback = app.feedbackReceived === true;
+              const stageLabelMap: Record<string, string> = { APPLIED: 'Applied', SHORTLISTED: 'Shortlisted', INTERVIEW_SCHEDULED: hasFeedback ? `Round ${app.currentRound || 1} — Selected` : `Round ${app.currentRound || 1}`, OFFERED: 'Offered' };
+              const stageColorOverride = app.stage === 'INTERVIEW_SCHEDULED' && hasFeedback ? '#15803D' : undefined;
+              const stageBgOverride = app.stage === 'INTERVIEW_SCHEDULED' && hasFeedback ? '#DCFCE7' : undefined;
               const stageColorMap: Record<string, string> = { APPLIED: '#64748B', SHORTLISTED: '#7C3AED', INTERVIEW_SCHEDULED: '#1D4ED8', OFFERED: '#15803D', REJECTED: '#B91C1C' };
               const stageBgMap: Record<string, string> = { APPLIED: '#F1F5F9', SHORTLISTED: '#EDE9FE', INTERVIEW_SCHEDULED: '#DBEAFE', OFFERED: '#DCFCE7', REJECTED: '#FEE2E2' };
 
@@ -635,7 +699,7 @@ export default function JobsPage() {
                         <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>Applied {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>
                       </div>
                     </div>
-                    <span style={{ padding: '4px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, color: stageColorMap[app.stage] ?? '#64748B', background: stageBgMap[app.stage] ?? '#F1F5F9', whiteSpace: 'nowrap' as const }}>
+                    <span style={{ padding: '4px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, color: stageColorOverride ?? stageColorMap[app.stage] ?? '#64748B', background: stageBgOverride ?? stageBgMap[app.stage] ?? '#F1F5F9', whiteSpace: 'nowrap' as const }}>
                       {isRejected ? 'Not Selected' : stageLabelMap[app.stage] ?? app.stage}
                     </span>
                   </div>
@@ -664,19 +728,37 @@ export default function JobsPage() {
 
                   {/* Interview scheduled card */}
                   {app.stage === 'INTERVIEW_SCHEDULED' && app.interviewScheduledAt && (
-                    <div style={{ background: '#EEF2FF', border: `1.5px solid ${PRIMARY}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: PRIMARY, marginBottom: '8px' }}>📅 Interview — Round {app.currentRound}</div>
+                    <div style={{ background: hasFeedback ? '#F0FDF4' : '#EEF2FF', border: `1.5px solid ${hasFeedback ? '#86EFAC' : PRIMARY}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: hasFeedback ? '#15803D' : PRIMARY }}>
+                          📅 Interview — Round {app.currentRound}
+                        </div>
+                        {hasFeedback ? (
+                          <span style={{ fontSize: '11px', fontWeight: 700, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '100px' }}>✓ Evaluation Complete</span>
+                        ) : (
+                          <span style={{ fontSize: '11px', fontWeight: 600, background: '#DBEAFE', color: '#1D4ED8', padding: '3px 10px', borderRadius: '100px' }}>Upcoming</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{new Date(app.interviewScheduledAt).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {new Date(app.interviewScheduledAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
                       <div style={{ fontSize: '12px', color: SUB, marginTop: '4px' }}>{app.interviewMode}{app.interviewDurationMinutes ? ` · ${app.interviewDurationMinutes} mins` : ''}</div>
                       {app.interviewerNames && <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}>Interviewer: {app.interviewerNames}</div>}
                       {app.interviewInstructions && <div style={{ fontSize: '12px', color: '#374151', marginTop: '3px', fontStyle: 'italic' }}>"{app.interviewInstructions}"</div>}
-                      {app.interviewLink && (
+                      {!hasFeedback && app.interviewLink && (
                         <a href={app.interviewLink} target="_blank" rel="noopener noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '10px', padding: '7px 16px', background: PRIMARY, color: '#fff', borderRadius: '100px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
                           🔗 Join Meeting
                         </a>
                       )}
                       {app.interviewVenue && <div style={{ fontSize: '12px', color: SUB, marginTop: '6px' }}>📍 {app.interviewVenue}</div>}
+                      {hasFeedback && (
+                        <div style={{ marginTop: '10px', padding: '10px 14px', background: '#DCFCE7', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '16px' }}>✅</span>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#15803D' }}>Selected — Round {app.currentRound} Cleared</div>
+                            <div style={{ fontSize: '11px', color: '#166534', marginTop: '2px' }}>The employer will schedule your next round shortly.</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -733,9 +815,9 @@ export default function JobsPage() {
             })}
           </div>
         )}
-        {tab !== 'applied' && loading ? (
+        {tab !== 'applied' && (loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: SUB, fontSize: '14px' }}>Loading…</div>
-        ) : tab !== 'applied' && filteredJobs.length === 0 ? (
+        ) : filteredJobs.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px', gap: '12px', color: '#94A3B8' }}>
             <Briefcase size={40} strokeWidth={1.2} />
             <p style={{ fontSize: '14px', margin: 0, fontWeight: 500, color: SUB }}>
@@ -787,11 +869,7 @@ export default function JobsPage() {
 
                   {/* Footer */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
-                    {applied ? (
-                      <span style={{ fontSize: '12px', color: '#16A34A', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={13} />Applied</span>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: SUB }}>{j.employmentType}</span>
-                    )}
+                    <span style={{ fontSize: '12px', color: SUB }}>{j.employmentType}</span>
                     <button onClick={e => { e.stopPropagation(); if (!applied) { setApplyJob(j); } }}
                       style={{ padding: '7px 18px', borderRadius: '100px', border: 'none', background: applied ? '#DCFCE7' : PINK, color: applied ? '#16A34A' : '#fff', fontSize: '12px', fontWeight: 600, cursor: applied ? 'default' : 'pointer' }}>
                       {applied ? 'Applied' : 'Apply Now'}
@@ -801,7 +879,7 @@ export default function JobsPage() {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* Job detail modal */}

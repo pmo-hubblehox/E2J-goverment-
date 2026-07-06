@@ -193,23 +193,51 @@ function ScheduleModal({ applicant, onClose, onDone }: { applicant: Applicant; o
 function FeedbackModal({ applicant, onClose, onDone }: { applicant: Applicant; onClose: () => void; onDone: (updated: Applicant) => void }) {
   const [ratings, setRatings] = useState({ overall: applicant.feedbackOverallRating || 0, tech: applicant.feedbackTechRating || 0, comm: applicant.feedbackCommRating || 0, problem: applicant.feedbackProblemRating || 0, culture: applicant.feedbackCultureRating || 0 });
   const [form, setForm] = useState({ strengths: applicant.feedbackStrengths || '', concerns: applicant.feedbackConcerns || '', notes: applicant.feedbackNotes || '' });
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<'accept' | 'reject' | null>(null);
 
-  const save = async () => {
-    setSaving(true);
-    try {
-      const r = await api.post(`/industry-portal/applicants/${applicant.applicationId}/feedback`, {
-        overallRating: ratings.overall, techRating: ratings.tech, commRating: ratings.comm,
-        problemRating: ratings.problem, cultureRating: ratings.culture,
-        strengths: form.strengths, concerns: form.concerns, notes: form.notes,
-      });
-      onDone(r.data.data);
-    } catch { alert('Failed to save feedback.'); } finally { setSaving(false); }
+  const submitFeedback = async () => {
+    return api.post(`/industry-portal/applicants/${applicant.applicationId}/feedback`, {
+      overallRating: ratings.overall, techRating: ratings.tech, commRating: ratings.comm,
+      problemRating: ratings.problem, cultureRating: ratings.culture,
+      strengths: form.strengths, concerns: form.concerns, notes: form.notes,
+    });
   };
 
+  const handleAccept = async () => {
+    if (ratings.overall === 0) { alert('Please give at least an overall rating before accepting.'); return; }
+    setSaving('accept');
+    try {
+      const r = await submitFeedback();
+      onDone(r.data.data);
+    } catch { alert('Failed to save feedback.'); } finally { setSaving(null); }
+  };
+
+  const handleReject = async () => {
+    if (ratings.overall === 0) { alert('Please give at least an overall rating before rejecting.'); return; }
+    setSaving('reject');
+    try {
+      await submitFeedback();
+      const r = await api.post(`/industry-portal/applicants/${applicant.applicationId}/reject`, {
+        reason: form.concerns || 'Did not clear interview round',
+        showToCandidate: false,
+      });
+      onDone(r.data.data);
+    } catch { alert('Failed to save feedback.'); } finally { setSaving(null); }
+  };
+
+  const footer = (
+    <>
+      <Btn variant="danger" onClick={handleReject} disabled={saving !== null}>
+        {saving === 'reject' ? 'Rejecting…' : '✕ Reject Candidate'}
+      </Btn>
+      <Btn variant="green" onClick={handleAccept} disabled={saving !== null}>
+        {saving === 'accept' ? 'Saving…' : '✓ Accept & Proceed'}
+      </Btn>
+    </>
+  );
+
   return (
-    <Modal title="Interview Feedback" subtitle={`${applicant.studentEmail} · Round ${applicant.currentRound}`} onClose={onClose}
-      footer={<><Btn variant="outline" onClick={onClose}>Cancel</Btn><Btn onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Feedback'}</Btn></>}>
+    <Modal title="Interview Feedback" subtitle={`${applicant.studentEmail} · Round ${applicant.currentRound}`} onClose={onClose} footer={footer}>
       <Field label="Overall Rating">
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           {[1,2,3,4,5].map(n => (
@@ -389,11 +417,20 @@ function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; 
               {shortlisting ? 'Shortlisting…' : '✓ Shortlist'}
             </button>
           )}
-          {(applicant.stage === 'SHORTLISTED' || applicant.stage === 'INTERVIEW_SCHEDULED') && (
+          {/* Schedule Interview — only when shortlisted, not yet interviewed */}
+          {applicant.stage === 'SHORTLISTED' && (
             <button onClick={() => setModal('schedule')}
               style={{ padding: '8px 16px', borderRadius: '100px', background: PRIMARY, color: '#fff', border: 'none', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
               <Calendar size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
-              {applicant.stage === 'INTERVIEW_SCHEDULED' ? 'Schedule Next Round' : 'Schedule Interview'}
+              Schedule Interview
+            </button>
+          )}
+          {/* Schedule Next Round — only after feedback submitted, as a secondary option */}
+          {applicant.stage === 'INTERVIEW_SCHEDULED' && applicant.feedbackOverallRating != null && applicant.feedbackOverallRating > 0 && (
+            <button onClick={() => setModal('schedule')}
+              style={{ padding: '8px 16px', borderRadius: '100px', background: '#fff', color: PRIMARY, border: `1.5px solid ${PRIMARY}`, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+              <Calendar size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+              + Another Round
             </button>
           )}
           {applicant.stage === 'INTERVIEW_SCHEDULED' && (
@@ -426,16 +463,24 @@ function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; 
         <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
           {/* Interview scheduled info */}
-          {applicant.stage === 'INTERVIEW_SCHEDULED' && applicant.interviewScheduledAt && (
-            <div style={{ background: '#EEF2FF', border: `1.5px solid ${PRIMARY}`, borderRadius: '12px', padding: '14px 16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: PRIMARY, marginBottom: '8px' }}>📅 Round {applicant.currentRound} Scheduled</div>
+          {applicant.stage === 'INTERVIEW_SCHEDULED' && applicant.interviewScheduledAt && (() => {
+            const evaluated = applicant.feedbackOverallRating != null && applicant.feedbackOverallRating > 0;
+            return (
+            <div style={{ background: evaluated ? '#F0FDF4' : '#EEF2FF', border: `1.5px solid ${evaluated ? '#86EFAC' : PRIMARY}`, borderRadius: '12px', padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: evaluated ? '#15803D' : PRIMARY }}>
+                  📅 Round {applicant.currentRound} {evaluated ? '— Selected' : 'Scheduled'}
+                </div>
+                {evaluated && <span style={{ fontSize: '11px', fontWeight: 700, background: '#DCFCE7', color: '#15803D', padding: '2px 8px', borderRadius: '100px' }}>✓ Cleared</span>}
+              </div>
               <div style={{ fontSize: '13px', color: TEXT, fontWeight: 600 }}>{fmtDateTime(applicant.interviewScheduledAt)}</div>
               {applicant.interviewDurationMinutes && <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}><Clock size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />{applicant.interviewDurationMinutes} mins · {applicant.interviewMode}</div>}
               {applicant.interviewLink && <a href={applicant.interviewLink} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: PRIMARY, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', textDecoration: 'none' }}><ExternalLink size={11} />Join Meeting</a>}
               {applicant.interviewVenue && <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}><MapPin size={11} style={{ marginRight: '3px', verticalAlign: 'middle' }} />{applicant.interviewVenue}</div>}
               {applicant.interviewerNames && <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}>Interviewer: {applicant.interviewerNames}</div>}
             </div>
-          )}
+            );
+          })()}
 
           {/* Offer status */}
           {applicant.offerLetter && (
