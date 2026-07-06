@@ -821,7 +821,7 @@ export default function JobsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '240px', gap: '12px', color: '#94A3B8' }}>
             <Briefcase size={40} strokeWidth={1.2} />
             <p style={{ fontSize: '14px', margin: 0, fontWeight: 500, color: SUB }}>
-              {tab === 'applied' ? 'No applications yet' : tab === 'saved' ? 'No saved jobs' : tab === 'recommended' ? 'No recommendations found' : `No ${subSection === 'internship' ? 'internships' : 'jobs'} available`}
+              {tab === 'saved' ? 'No saved jobs' : tab === 'recommended' ? 'No recommendations found' : `No ${subSection === 'internship' ? 'internships' : 'jobs'} available`}
             </p>
             {tab !== 'all' && (
               <button onClick={() => setTab('all')} style={{ fontSize: '13px', color: PRIMARY, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Browse all jobs</button>
