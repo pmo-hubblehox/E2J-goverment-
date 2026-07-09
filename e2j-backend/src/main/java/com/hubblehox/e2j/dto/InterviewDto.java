@@ -49,6 +49,7 @@ public class InterviewDto {
         private List<QuestionDetail> questions;
         private String createdAt;
         private Integer violationCount;
+        private boolean endedEarly;
     }
 
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor

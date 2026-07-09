@@ -607,6 +607,35 @@ export default function JobsPage() {
                         </div>
                       )}
                     </div>
+                    {evaluated && (app.feedbackOverallRating || app.feedbackStrengths || app.feedbackConcerns || app.feedbackNotes) && (
+                      <div style={{ marginTop: '14px', background: '#FAFBFF', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '14px 16px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: TEXT, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Interviewer Feedback</div>
+                        {app.feedbackOverallRating ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                            {[
+                              ['Overall', app.feedbackOverallRating],
+                              ['Technical', app.feedbackTechRating],
+                              ['Communication', app.feedbackCommRating],
+                              ['Problem Solving', app.feedbackProblemRating],
+                              ['Culture Fit', app.feedbackCultureRating],
+                            ].filter(([, v]) => !!v).map(([label, v]) => (
+                              <span key={label as string} style={{ fontSize: '11px', color: SUB, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '100px', padding: '4px 10px' }}>
+                                {label}: <strong style={{ color: TEXT }}>{v}/5</strong>
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {app.feedbackStrengths && (
+                          <div style={{ fontSize: '12px', color: TEXT, marginBottom: '6px' }}><strong>Strengths:</strong> {app.feedbackStrengths}</div>
+                        )}
+                        {app.feedbackConcerns && (
+                          <div style={{ fontSize: '12px', color: TEXT, marginBottom: '6px' }}><strong>Areas to improve:</strong> {app.feedbackConcerns}</div>
+                        )}
+                        {app.feedbackNotes && (
+                          <div style={{ fontSize: '12px', color: TEXT }}><strong>Notes:</strong> {app.feedbackNotes}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

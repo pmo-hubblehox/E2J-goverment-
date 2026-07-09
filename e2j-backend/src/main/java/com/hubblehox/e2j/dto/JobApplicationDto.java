@@ -43,6 +43,14 @@ public class JobApplicationDto {
         private String interviewInstructions;
         // feedback flag (true = interview evaluated & candidate cleared this round)
         private Boolean feedbackReceived;
+        private Integer feedbackOverallRating;
+        private Integer feedbackTechRating;
+        private Integer feedbackCommRating;
+        private Integer feedbackProblemRating;
+        private Integer feedbackCultureRating;
+        private String feedbackStrengths;
+        private String feedbackConcerns;
+        private String feedbackNotes;
         // rejection
         private String rejectionMessage; // only populated when showRejectionToCandidate=true
         // offer letter
@@ -74,6 +82,16 @@ public class JobApplicationDto {
             r.interviewerNames = a.getInterviewerNames();
             r.interviewInstructions = a.getInterviewInstructions();
             r.feedbackReceived = a.getFeedbackOverallRating() != null && a.getFeedbackOverallRating() > 0;
+            if (Boolean.TRUE.equals(r.feedbackReceived)) {
+                r.feedbackOverallRating = a.getFeedbackOverallRating();
+                r.feedbackTechRating = a.getFeedbackTechRating();
+                r.feedbackCommRating = a.getFeedbackCommRating();
+                r.feedbackProblemRating = a.getFeedbackProblemRating();
+                r.feedbackCultureRating = a.getFeedbackCultureRating();
+                r.feedbackStrengths = a.getFeedbackStrengths();
+                r.feedbackConcerns = a.getFeedbackConcerns();
+                r.feedbackNotes = a.getFeedbackNotes();
+            }
             if (Boolean.TRUE.equals(a.getShowRejectionToCandidate()))
                 r.rejectionMessage = a.getRejectionReason();
             if (offer != null)

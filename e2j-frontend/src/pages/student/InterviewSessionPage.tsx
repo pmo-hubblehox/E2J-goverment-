@@ -14,9 +14,6 @@ const PREFERRED_VOICES: Record<string, string[]> = {
   Hindi:   ['Google हिन्दी', 'Microsoft Swara', 'hi-IN'],
 };
 
-const SILENCE_THRESHOLD     = 18;
-const SILENCE_AFTER_SPEECH_MS = 4000;
-const MIN_SPEECH_MS         = 4000;
 const MAX_ANSWER_SEC        = 180;
 
 const LANGUAGES = [
@@ -84,9 +81,6 @@ export default function InterviewSessionPage() {
 
   const recognitionRef   = useRef<any>(null);
   const ttsUtteranceRef  = useRef<SpeechSynthesisUtterance | null>(null);
-  const audioCtxRef      = useRef<AudioContext | null>(null);
-  const silenceCheckRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const speechStartRef   = useRef<number | null>(null);
   const transcriptRef    = useRef('');
   const answerTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const globalTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -201,35 +195,9 @@ export default function InterviewSessionPage() {
     } else { window.speechSynthesis.speak(utterance); }
   }, []);
 
-  const startSilenceDetection = (stream: MediaStream) => {
-    try {
-      const ctx = new AudioContext();
-      const analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      audioCtxRef.current = ctx;
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      let silenceMs = 0;
-      silenceCheckRef.current = setInterval(() => {
-        analyser.getByteTimeDomainData(data);
-        const rms = Math.sqrt(data.reduce((s, v) => s + (v - 128) ** 2, 0) / data.length);
-        if (rms > SILENCE_THRESHOLD) { if (!speechStartRef.current) speechStartRef.current = Date.now(); silenceMs = 0; }
-        else {
-          silenceMs += 100;
-          const spokenMs = speechStartRef.current ? Date.now() - speechStartRef.current : 0;
-          if (spokenMs >= MIN_SPEECH_MS && silenceMs >= SILENCE_AFTER_SPEECH_MS) {
-            clearInterval(silenceCheckRef.current!); silenceCheckRef.current = null;
-            autoSubmitRef.current?.();
-          }
-        }
-      }, 100);
-    } catch { /* no AudioContext */ }
-  };
-
   const stopListening = () => {
     recognitionRef.current?.stop(); recognitionRef.current = null;
-    if (silenceCheckRef.current) { clearInterval(silenceCheckRef.current); silenceCheckRef.current = null; }
     if (answerTimerRef.current) { clearInterval(answerTimerRef.current); answerTimerRef.current = null; }
-    if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
     mediaStreamRef.current?.getTracks().forEach(t => t.stop()); mediaStreamRef.current = null;
   };
 
@@ -256,7 +224,7 @@ export default function InterviewSessionPage() {
   useEffect(() => { autoSubmitRef.current = doSubmit; }, [doSubmit]);
 
   const startListening = useCallback(async () => {
-    transcriptRef.current = ''; speechStartRef.current = null;
+    transcriptRef.current = '';
     setLiveTranscript(''); setAnswerTimerSec(0);
     if (!navigator.mediaDevices?.getUserMedia) {
       triggerViolation('Microphone requires HTTPS. Please access via HTTPS or localhost.');
@@ -281,7 +249,6 @@ export default function InterviewSessionPage() {
     };
     recognition.onerror = () => {};
     recognition.start(); recognitionRef.current = recognition;
-    startSilenceDetection(stream);
     answerTimerRef.current = setInterval(() => {
       setAnswerTimerSec(s => {
         if (s + 1 >= MAX_ANSWER_SEC) { clearInterval(answerTimerRef.current!); autoSubmitRef.current?.(); }
@@ -451,11 +418,12 @@ export default function InterviewSessionPage() {
               <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
                 <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>⚠️ Interview Rules — Please Read</p>
                 <ul style={{ margin: 0, padding: '0 0 0 18px', color: '#7F1D1D', fontSize: '13px', lineHeight: 2 }}>
+                  <li>Be in a quiet place before taking the interview</li>
                   <li>Do not switch tabs or open other windows</li>
                   <li>Do not exit fullscreen during the interview</li>
                   <li>Speak clearly — your answers are recorded and evaluated</li>
                   <li>Each question has a 3-minute time limit</li>
-                  <li>4 seconds of silence after speaking will auto-submit your answer</li>
+                  <li>Click "Next Question" when you're ready to submit your answer</li>
                   <li>All violations are logged in your final report</li>
                 </ul>
               </div>
@@ -549,7 +517,9 @@ export default function InterviewSessionPage() {
             </div>
             <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: TEXT }}>End Interview?</h3>
             <p style={{ margin: '0 0 24px', fontSize: '14px', color: SUB, lineHeight: 1.6 }}>
-              Your progress will be saved but no report will be generated. You can resume this interview later.
+              {session?.questionNumber && session.questionNumber > 1
+                ? 'A report will be generated based on the questions you\'ve answered so far.'
+                : 'Your progress will be saved but no report will be generated. You can resume this interview later.'}
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={() => { setShowExitConfirm(false); if (session?.questionText) speakQuestion(session.questionText, () => {}); }}
@@ -558,8 +528,13 @@ export default function InterviewSessionPage() {
               </button>
               <button onClick={async () => {
                   stopAudio(); stopListening();
+                  const hasAnswered = !!(session?.questionNumber && session.questionNumber > 1);
                   if (session) { try { await api.post(`/student/interview/${session.sessionId}/abandon`); } catch { /* best-effort */ } }
-                  navigate('/student/interview');
+                  if (hasAnswered && session) {
+                    navigate(`/student/interview/${session.sessionId}/report`);
+                  } else {
+                    navigate('/student/interview');
+                  }
                 }}
                 style={{ flex: 1, padding: '12px', borderRadius: '100px', border: 'none', background: '#EF4444', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                 Yes, Exit
@@ -643,10 +618,15 @@ export default function InterviewSessionPage() {
 
             <div>
               <p style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 700, color: '#15803D' }}>Your turn to speak</p>
-              <p style={{ margin: 0, fontSize: '14px', color: SUB }}>Speak your answer — 4 seconds of silence will auto-submit</p>
+              <p style={{ margin: 0, fontSize: '14px', color: SUB }}>Speak your answer, then click "Next Question" when you're ready to move on</p>
             </div>
 
             <Waveform active color="#22C55E" />
+
+            <button type="button" onClick={() => doSubmit()}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 28px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(63,65,209,0.3)' }}>
+              Next Question →
+            </button>
 
             {/* Question reminder */}
             <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '14px 18px', width: '100%', textAlign: 'left' }}>

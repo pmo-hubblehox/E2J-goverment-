@@ -46,7 +46,7 @@ interface Report {
   durationMinutes: number;
   topicScores: { topicArea: string; score: number; questionCount: number }[];
   questions: Question[];
-  createdAt: string; violationCount: number;
+  createdAt: string; violationCount: number; endedEarly: boolean;
 }
 
 function ScoreRing({ score }: { score: number }) {
@@ -254,6 +254,15 @@ export default function InterviewReportPage() {
           </button>
         </div>
       </div>
+
+      {report.endedEarly && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
+          <AlertCircle size={18} color="#92400E" style={{ flexShrink: 0, marginTop: '1px' }} />
+          <p style={{ margin: 0, fontSize: '13px', color: '#92400E', lineHeight: 1.6 }}>
+            This interview was ended before all questions were answered. This report is based only on the questions you completed.
+          </p>
+        </div>
+      )}
 
       {/* Row 1: Score ring + Topic Breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '20px', marginBottom: '20px', alignItems: 'start' }}>

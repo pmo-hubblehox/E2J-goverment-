@@ -49,6 +49,10 @@ public class InterviewSession {
     @Builder.Default
     private Integer violationCount = 0; // tab switches / fullscreen exits detected
 
+    @Builder.Default
+    @Column(columnDefinition = "boolean default false")
+    private boolean endedEarly = false; // true when student ended the interview before it naturally concluded
+
     private String language; // e.g. "English", "Hindi", "Tamil"
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)

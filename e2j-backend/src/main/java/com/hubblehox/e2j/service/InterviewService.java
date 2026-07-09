@@ -433,9 +433,22 @@ public class InterviewService {
         Student student = getStudent(email);
         InterviewSession session = sessionRepo.findByIdAndStudent(sessionId, student)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
-        session.setStatus(SessionStatus.ABANDONED);
+
+        boolean hasAnsweredQuestion = questionRepo.findBySessionOrderBySequenceNumber(session).stream()
+                .anyMatch(q -> q.getAiScore() != null);
+
         session.setEndedAt(LocalDateTime.now());
-        sessionRepo.save(session);
+        session.setDurationMinutes((int) ChronoUnit.MINUTES.between(session.getStartedAt(), session.getEndedAt()));
+
+        if (hasAnsweredQuestion) {
+            session.setStatus(SessionStatus.COMPLETED);
+            session.setEndedEarly(true);
+            sessionRepo.save(session);
+            generateReport(session);
+        } else {
+            session.setStatus(SessionStatus.ABANDONED);
+            sessionRepo.save(session);
+        }
     }
 
     /* ── Resume In-Progress Session ── */
@@ -550,6 +563,7 @@ public class InterviewService {
                 .questions(qDetails)
                 .createdAt(session.getCreatedAt() != null ? session.getCreatedAt().toString() : null)
                 .violationCount(session.getViolationCount())
+                .endedEarly(session.isEndedEarly())
                 .build();
     }
 
