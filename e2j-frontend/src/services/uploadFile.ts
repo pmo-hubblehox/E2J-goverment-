@@ -1,6 +1,7 @@
 import api from './api';
 
-const BACKEND_ORIGIN = 'http://localhost:8081';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://education-to-job-api.hubblehox.ai/api';
+const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 /**
  * Convert a stored relative doc URL (/api/files/...) to a full absolute URL
