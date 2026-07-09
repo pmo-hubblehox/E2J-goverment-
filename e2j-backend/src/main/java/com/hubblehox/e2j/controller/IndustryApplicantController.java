@@ -69,4 +69,14 @@ public class IndustryApplicantController {
             @RequestBody JobApplicationDto.OfferLetterRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(jobApplicationService.generateOfferLetter(ud.getUsername(), id, req), "Offer letter generated"));
     }
+
+    @GetMapping("/applicants/{id}/offer-letter/pdf")
+    public ResponseEntity<byte[]> downloadOfferLetterPdf(
+            @AuthenticationPrincipal UserDetails ud, @PathVariable Long id) {
+        byte[] pdf = jobApplicationService.downloadOfferLetterPdfForPartner(ud.getUsername(), id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"offer-letter-" + id + ".pdf\"")
+                .body(pdf);
+    }
 }

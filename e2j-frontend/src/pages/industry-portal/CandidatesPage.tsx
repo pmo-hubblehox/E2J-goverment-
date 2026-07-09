@@ -488,6 +488,13 @@ function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; 
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#15803D', marginBottom: '6px' }}>🎉 Offer Sent</div>
               <div style={{ fontSize: '13px', color: TEXT }}>{applicant.offerLetter.designation} · ₹{(applicant.offerLetter.ctc / 100000).toFixed(1)}L CTC</div>
               <div style={{ fontSize: '12px', color: SUB, marginTop: '3px' }}>Status: <strong>{applicant.offerLetter.status}</strong> · Joining: {applicant.offerLetter.joiningDate ? new Date(applicant.offerLetter.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</div>
+              <button onClick={async () => {
+                try {
+                  const res = await api.get(`/industry-portal/applicants/${applicant.applicationId}/offer-letter/pdf`, { responseType: 'blob' });
+                  const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                  window.open(url, '_blank');
+                } catch { alert('Failed to load offer letter.'); }
+              }} style={{ marginTop: '10px', padding: '7px 16px', borderRadius: '100px', background: '#fff', color: '#15803D', border: '1.5px solid #86EFAC', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>📄 View Offer Letter PDF</button>
             </div>
           )}
 

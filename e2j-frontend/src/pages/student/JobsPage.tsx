@@ -811,18 +811,27 @@ export default function JobsPage() {
                           </div>
                         ))}
                       </div>
-                      {app.offerLetter.status === 'PENDING' && (
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button disabled={offerResponding === app.id} onClick={async () => {
-                            setOfferResponding(app.id);
-                            try { const r = await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'ACCEPTED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'ACCEPTED' } } : a)); } catch { alert('Failed to respond to offer.'); } finally { setOfferResponding(null); }
-                          }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#16A34A', color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: offerResponding === app.id ? 0.6 : 1 }}>✓ Accept Offer</button>
-                          <button disabled={offerResponding === app.id} onClick={async () => {
-                            setOfferResponding(app.id);
-                            try { await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'DECLINED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'DECLINED' } } : a)); } catch { alert('Failed to respond.'); } finally { setOfferResponding(null); }
-                          }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#fff', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>✗ Decline</button>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        {app.offerLetter.status === 'PENDING' && (
+                          <>
+                            <button disabled={offerResponding === app.id} onClick={async () => {
+                              setOfferResponding(app.id);
+                              try { const r = await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'ACCEPTED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'ACCEPTED' } } : a)); } catch { alert('Failed to respond to offer.'); } finally { setOfferResponding(null); }
+                            }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#16A34A', color: '#fff', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: offerResponding === app.id ? 0.6 : 1 }}>✓ Accept Offer</button>
+                            <button disabled={offerResponding === app.id} onClick={async () => {
+                              setOfferResponding(app.id);
+                              try { await api.patch(`/student/applications/${app.id}/offer/respond`, { response: 'DECLINED' }); setMyApplications(prev => prev.map(a => a.id === app.id ? { ...a, offerLetter: { ...a.offerLetter, status: 'DECLINED' } } : a)); } catch { alert('Failed to respond.'); } finally { setOfferResponding(null); }
+                            }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#fff', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>✗ Decline</button>
+                          </>
+                        )}
+                        <button onClick={async () => {
+                          try {
+                            const res = await api.get(`/student/applications/${app.id}/offer/pdf`, { responseType: 'blob' });
+                            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                            window.open(url, '_blank');
+                          } catch { alert('Failed to load offer letter.'); }
+                        }} style={{ padding: '9px 22px', borderRadius: '100px', background: '#fff', color: PRIMARY, border: `1.5px solid ${PRIMARY}`, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>📄 View Offer Letter</button>
+                      </div>
                       {app.offerLetter.offerExpiry && app.offerLetter.status === 'PENDING' && (
                         <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '8px' }}>Offer expires {new Date(app.offerLetter.offerExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                       )}

@@ -26,6 +26,7 @@ public class JobApplicationService {
     private final UserRepository userRepo;
     private final OfferLetterRepository offerRepo;
     private final ObjectMapper objectMapper;
+    private final OfferLetterPdfService offerLetterPdfService;
 
     private Student getStudent(String email) {
         var user = userRepo.findByEmail(email)
@@ -110,6 +111,18 @@ public class JobApplicationService {
         offer.setStatus("ACCEPTED".equalsIgnoreCase(response) ? OfferLetter.Status.ACCEPTED : OfferLetter.Status.DECLINED);
         offer.setRespondedAt(LocalDateTime.now());
         return JobApplicationDto.OfferLetterDto.from(offerRepo.save(offer));
+    }
+
+    // ── Student: download offer letter PDF ────────────────────
+    public byte[] downloadOfferLetterPdf(String email, Long applicationId) {
+        Student student = getStudent(email);
+        JobApplication app = appRepo.findById(applicationId)
+                .orElseThrow(() -> new AppException("Application not found", HttpStatus.NOT_FOUND));
+        if (!app.getStudent().getId().equals(student.getId()))
+            throw new AppException("Unauthorized", HttpStatus.FORBIDDEN);
+        OfferLetter offer = offerRepo.findByJobApplication(app)
+                .orElseThrow(() -> new AppException("Offer not found", HttpStatus.NOT_FOUND));
+        return offerLetterPdfService.generate(app, offer);
     }
 
     // ── Industry: list applicants ─────────────────────────────
@@ -216,5 +229,13 @@ public class JobApplicationService {
         app.setStage(JobApplication.Stage.OFFERED);
         appRepo.save(app);
         return JobApplicationDto.OfferLetterDto.from(offerRepo.save(offer));
+    }
+
+    // ── Industry: preview generated offer letter PDF ──────────
+    public byte[] downloadOfferLetterPdfForPartner(String email, Long applicationId) {
+        JobApplication app = getAppForPartner(email, applicationId);
+        OfferLetter offer = offerRepo.findByJobApplication(app)
+                .orElseThrow(() -> new AppException("Offer not found", HttpStatus.NOT_FOUND));
+        return offerLetterPdfService.generate(app, offer);
     }
 }

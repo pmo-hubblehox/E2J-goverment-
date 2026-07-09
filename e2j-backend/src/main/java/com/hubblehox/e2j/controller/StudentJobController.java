@@ -62,4 +62,15 @@ public class StudentJobController {
                 jobApplicationService.respondToOffer(ud.getUsername(), id, body.get("response")),
                 "Response recorded"));
     }
+
+    @GetMapping("/applications/{id}/offer/pdf")
+    public ResponseEntity<byte[]> downloadOfferLetterPdf(
+            @AuthenticationPrincipal UserDetails ud,
+            @PathVariable Long id) {
+        byte[] pdf = jobApplicationService.downloadOfferLetterPdf(ud.getUsername(), id);
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "inline; filename=\"offer-letter-" + id + ".pdf\"")
+                .body(pdf);
+    }
 }
