@@ -29,9 +29,9 @@ const BG        = '#F8FAFC';
 const SKILL_TYPES = ['Technical', 'Soft', 'Knowledge'] as const;
 
 const SECTION_CONFIG: Record<string, { label: string; bg: string; border: string }> = {
-  Technical:  { label: 'Technical',  bg: '#EEF2FF', border: '#C7D2FE' },
-  Knowledge:  { label: 'Practical',  bg: '#EEF2FF', border: '#C7D2FE' },
-  Soft:       { label: 'Soft Skills',bg: '#FDF4FF', border: '#E9D5FF' },
+  Technical:  { label: 'Practical Application', bg: '#EEF2FF', border: '#C7D2FE' },
+  Knowledge:  { label: 'Technical Skills',       bg: '#EEF2FF', border: '#C7D2FE' },
+  Soft:       { label: 'Soft Skills',            bg: '#FDF4FF', border: '#E9D5FF' },
 };
 
 // ── Helper ────────────────────────────────────────────────────────────────────

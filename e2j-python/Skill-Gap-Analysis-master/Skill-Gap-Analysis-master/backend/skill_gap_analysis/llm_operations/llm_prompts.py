@@ -39,9 +39,9 @@ CLASSIFY_SKILL_COVERAGE_AND_TYPE = ChatMessage.from_user(
     
     Given the skill set "{{skill_set}}", I want you to think and tell me whether the skills from the skill set are taught in the curriculum. I also want you to classify
     each skill as:
-    1. "Knowledge" for Knowledge-Based Skills - subject/domain-specific understanding.
-    2. "Technical" for Technical/Skill-Based Competencies - hands-on or tool-based expertise.
-    3. "Soft" for Cognitive/Soft Skills - problem-solving, communication, adaptability, etc.
+    1. "Knowledge" for Technical Skills - subject-specific knowledge and theoretical understanding required for the chosen career. Includes concepts, principles, domain expertise, and technical fundamentals.
+    2. "Technical" for Practical Application - ability to apply technical knowledge in real-world scenarios using tools, software, projects, case studies, simulations, or hands-on tasks. Focuses on execution rather than theory.
+    3. "Soft" for Soft Skills - workplace and interpersonal skills such as communication, problem-solving, critical thinking, teamwork, adaptability, time management, and leadership.
     ```
 
     Task category:
