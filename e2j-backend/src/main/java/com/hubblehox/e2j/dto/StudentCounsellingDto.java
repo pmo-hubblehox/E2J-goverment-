@@ -79,6 +79,7 @@ public class StudentCounsellingDto {
         private String sessionDate;
         private String sessionTime;
         private Double feeAmount;
+        private Long psychometricReportId;
     }
 
     @Data @Builder

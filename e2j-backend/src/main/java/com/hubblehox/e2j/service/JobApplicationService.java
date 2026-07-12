@@ -76,6 +76,7 @@ public class JobApplicationService {
         JobApplication app = JobApplication.builder()
                 .student(student).jobPosting(job)
                 .resumeUrl(resumeUrl).resumeFileName(resumeFileName)
+                .introVideoUrl(req.getIntroVideoUrl())
                 .questionAnswers(qaJson).stage(JobApplication.Stage.APPLIED)
                 .build();
         return JobApplicationDto.Response.from(appRepo.save(app), null);

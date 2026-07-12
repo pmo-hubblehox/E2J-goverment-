@@ -37,6 +37,25 @@ public class InterviewController {
         return ResponseEntity.ok(ApiResponse.ok(interviewService.getAspirationOptions(userDetails.getUsername())));
     }
 
+    /** Generate a 10-question MCQ round for the selected role */
+    @PostMapping("/mcq/generate")
+    public ResponseEntity<ApiResponse<InterviewDto.McqGenerateResponse>> generateQuiz(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody InterviewDto.McqGenerateRequest request) {
+        InterviewDto.McqGenerateResponse res = interviewService.generateQuiz(userDetails.getUsername(), request.getRole());
+        return ResponseEntity.ok(ApiResponse.ok(res));
+    }
+
+    /** Evaluate MCQ answers and return score + calibrated interview difficulty */
+    @PostMapping("/mcq/evaluate")
+    public ResponseEntity<ApiResponse<InterviewDto.McqEvaluateResponse>> evaluateQuiz(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody InterviewDto.McqEvaluateRequest request) {
+        InterviewDto.McqEvaluateResponse res = interviewService.evaluateQuiz(
+                userDetails.getUsername(), request.getQuizId(), request.getSelectedAnswers());
+        return ResponseEntity.ok(ApiResponse.ok(res));
+    }
+
     /** Start a new interview session */
     @PostMapping("/start")
     public ResponseEntity<ApiResponse<InterviewDto.SessionResponse>> start(

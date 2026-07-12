@@ -171,6 +171,7 @@ public class StudentCounsellingService {
                 .feeAmount(req.getFeeAmount())
                 .meetLink(meetLink)
                 .status(StudentBooking.Status.CONFIRMED)
+                .psychometricReportId(req.getPsychometricReportId())
                 .build();
         booking = bookingRepo.save(booking);
 

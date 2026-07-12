@@ -55,6 +55,12 @@ public class InterviewSession {
 
     private String language; // e.g. "English", "Hindi", "Tamil"
 
+    private Integer difficultyLevel; // 1-10, calibrated from pre-interview MCQ score
+    private Integer mcqScore; // 0-10, pre-interview quiz score
+
+    @Column(columnDefinition = "TEXT")
+    private String mcqReview; // JSON array of McqReviewItem, persisted for the report
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<InterviewQuestion> questions = new ArrayList<>();

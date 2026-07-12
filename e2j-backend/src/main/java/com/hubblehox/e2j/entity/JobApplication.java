@@ -25,6 +25,7 @@ public class JobApplication {
 
     private String resumeUrl;
     private String resumeFileName;
+    private String introVideoUrl;
 
     @Column(columnDefinition = "TEXT")
     private String profileSnapshot;

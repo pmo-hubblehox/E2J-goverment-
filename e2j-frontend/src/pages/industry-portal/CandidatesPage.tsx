@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, Users, X, FileText, Mail, Phone, Briefcase, ChevronRight, Star, ExternalLink, Calendar, Clock, MapPin } from 'lucide-react';
+import { Search, Download, Users, X, FileText, Mail, Phone, Briefcase, ChevronRight, Star, ExternalLink, Calendar, Clock, MapPin, Video, Maximize2 } from 'lucide-react';
 import api from '../../services/api';
 
 const BORDER = '#E2E8F0';
@@ -31,7 +31,7 @@ interface OfferLetter {
 interface Applicant {
   applicationId: number; jobId: number; jobRole: string; department: string; postingType: string;
   studentId: number; studentName: string; studentEmail: string; studentPhone: string;
-  resumeUrl: string; resumeFileName: string; stage: string; currentRound: number; appliedAt: string;
+  resumeUrl: string; resumeFileName: string; introVideoUrl: string; stage: string; currentRound: number; appliedAt: string;
   questionAnswers: string;
   interviewScheduledAt: string; interviewMode: string; interviewLink: string; interviewVenue: string;
   interviewDurationMinutes: number; interviewerNames: string; interviewInstructions: string;
@@ -370,6 +370,7 @@ function OfferModal({ applicant, onClose, onDone }: { applicant: Applicant; onCl
 function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; onClose: () => void; onUpdate: (a: Applicant) => void }) {
   const [modal, setModal] = useState<'schedule' | 'feedback' | 'offer' | 'reject' | null>(null);
   const [shortlisting, setShortlisting] = useState(false);
+  const [videoExpanded, setVideoExpanded] = useState(false);
   const qaList = parseQA(applicant.questionAnswers);
   const resumeUrl = resolveUrl(applicant.resumeUrl);
   const st = STAGE_STYLE[applicant.stage] ?? STAGE_STYLE.APPLIED;
@@ -514,6 +515,19 @@ function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; 
             ) : <span style={{ fontSize: '13px', color: '#CBD5E1' }}>No resume attached</span>}
           </DrawerSection>
 
+          {/* Intro Video */}
+          {applicant.introVideoUrl && (
+            <DrawerSection title="Intro Video" icon={<Video size={14} color={PRIMARY} />}>
+              <div style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
+                <video controls src={resolveUrl(applicant.introVideoUrl)} style={{ width: '100%', borderRadius: '8px', background: '#000', display: 'block' }} />
+                <button onClick={() => setVideoExpanded(true)} title="Expand"
+                  style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '8px', border: 'none', background: 'rgba(0,0,0,0.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <Maximize2 size={14} />
+                </button>
+              </div>
+            </DrawerSection>
+          )}
+
           {/* Application Details */}
           <DrawerSection title="Application Details" icon={<Briefcase size={14} color={PRIMARY} />}>
             <DRow label="Job Role" value={applicant.jobRole} />
@@ -553,6 +567,19 @@ function ReviewDrawer({ applicant, onClose, onUpdate }: { applicant: Applicant; 
       {modal === 'feedback' && <FeedbackModal applicant={applicant} onClose={() => setModal(null)} onDone={a => { onUpdate(a); setModal(null); }} />}
       {modal === 'reject'   && <RejectModal   applicant={applicant} onClose={() => setModal(null)} onDone={a => { onUpdate(a); setModal(null); onClose(); }} />}
       {modal === 'offer'    && <OfferModal    applicant={applicant} onClose={() => setModal(null)} onDone={a => { onUpdate(a); setModal(null); }} />}
+
+      {videoExpanded && applicant.introVideoUrl && (
+        <div onClick={() => setVideoExpanded(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+          <button onClick={() => setVideoExpanded(false)}
+            style={{ position: 'absolute', top: '20px', right: '24px', width: '38px', height: '38px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <X size={20} />
+          </button>
+          <video controls autoPlay src={resolveUrl(applicant.introVideoUrl)}
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '85vh', borderRadius: '10px', background: '#000' }} />
+        </div>
+      )}
     </>
   );
 }

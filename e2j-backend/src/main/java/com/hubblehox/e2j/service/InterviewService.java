@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class InterviewService {
     private final UserRepository userRepo;
     private final GroqService groq;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final Map<String, List<InterviewDto.McqQuestion>> mcqQuizStore = new ConcurrentHashMap<>();
 
     /* ── helpers ── */
     private Student getStudent(String email) {
@@ -36,13 +38,24 @@ public class InterviewService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
     }
 
-    private String buildSystemPrompt(String role, String experienceLevel, String skills, String language) {
+    private String buildSystemPrompt(String role, String experienceLevel, String skills, String language, Integer difficultyLevel) {
         String langInstruction = (language != null && !language.equalsIgnoreCase("English"))
                 ? "IMPORTANT: Conduct the ENTIRE interview in " + language + ". Ask all questions and give all feedback in " + language + " only. Use professional, clear " + language + "."
                 : "Conduct the interview in English.";
 
+        int level = difficultyLevel != null ? difficultyLevel : 5;
+        String difficultyInstruction = """
+                DIFFICULTY LEVEL: %d/10 (calibrated from the candidate's pre-interview quiz score).
+                - 1-3: ask foundational, easy questions — build confidence.
+                - 4-6: ask standard practical questions at expected competency level.
+                - 7-10: ask advanced, nuanced questions that probe edge cases and deep understanding.
+                Calibrate the complexity of EVERY question (not just topic) to this level.
+                """.formatted(level);
+
         return """
                 You are an experienced technical interviewer conducting a real job interview.
+
+                %s
 
                 %s
 
@@ -84,7 +97,7 @@ public class InterviewService {
                 For the VERY FIRST question, scoreForPreviousAnswer and feedbackForPreviousAnswer must be null.
                 For all subsequent questions, always include score (1-10) and feedback for the PREVIOUS answer.
                 When isComplete is true, include the final score and feedback for the last answer.
-                """.formatted(langInstruction, role, experienceLevel, skills, role, role);
+                """.formatted(langInstruction, difficultyInstruction, role, experienceLevel, skills, role, role);
     }
 
     /* ── AI Role Matches ── */
@@ -155,6 +168,98 @@ public class InterviewService {
                 .build();
     }
 
+    /* ── Pre-interview MCQ round ── */
+    public InterviewDto.McqGenerateResponse generateQuiz(String email, String role) {
+        getStudent(email); // ensure authenticated student
+
+        String prompt = """
+                Generate exactly 10 multiple-choice questions to screen a candidate's knowledge for the role of "%s".
+                Questions should cover a mix of foundational and practical concepts for this role.
+                Each question must have exactly 4 options, with exactly one correct answer.
+
+                Respond ONLY with this exact JSON format, no markdown, no explanation:
+                {
+                  "questions": [
+                    {
+                      "questionText": "Question here",
+                      "options": ["Option A", "Option B", "Option C", "Option D"],
+                      "correctIndex": 0
+                    }
+                  ]
+                }
+                """.formatted(role);
+
+        List<GroqService.Message> messages = List.of(
+                new GroqService.Message("system", "You are an expert technical assessor. Always respond in valid JSON."),
+                new GroqService.Message("user", prompt)
+        );
+
+        String raw = groq.chat(messages, 2048);
+        JsonNode json = parseJson(raw);
+
+        List<InterviewDto.McqQuestion> fullQuestions = new ArrayList<>();
+        for (JsonNode q : json.path("questions")) {
+            List<String> options = new ArrayList<>();
+            q.path("options").forEach(o -> options.add(o.asText()));
+            fullQuestions.add(InterviewDto.McqQuestion.builder()
+                    .questionText(q.path("questionText").asText())
+                    .options(options)
+                    .correctIndex(q.path("correctIndex").asInt(0))
+                    .build());
+        }
+
+        String quizId = UUID.randomUUID().toString();
+        mcqQuizStore.put(quizId, fullQuestions);
+
+        // strip correctIndex before returning to client
+        List<InterviewDto.McqQuestion> clientQuestions = fullQuestions.stream()
+                .map(q -> InterviewDto.McqQuestion.builder()
+                        .questionText(q.getQuestionText())
+                        .options(q.getOptions())
+                        .build())
+                .toList();
+
+        return InterviewDto.McqGenerateResponse.builder()
+                .quizId(quizId)
+                .questions(clientQuestions)
+                .build();
+    }
+
+    public InterviewDto.McqEvaluateResponse evaluateQuiz(String email, String quizId, List<Integer> selectedAnswers) {
+        getStudent(email);
+        List<InterviewDto.McqQuestion> fullQuestions = mcqQuizStore.remove(quizId);
+        if (fullQuestions == null)
+            throw new RuntimeException("Quiz not found or already evaluated");
+
+        int score = 0;
+        List<InterviewDto.McqReviewItem> review = new ArrayList<>();
+        for (int i = 0; i < fullQuestions.size(); i++) {
+            InterviewDto.McqQuestion q = fullQuestions.get(i);
+            Integer selected = (selectedAnswers != null && i < selectedAnswers.size()) ? selectedAnswers.get(i) : null;
+            boolean correct = selected != null && selected.equals(q.getCorrectIndex());
+            if (correct) score++;
+            review.add(InterviewDto.McqReviewItem.builder()
+                    .questionText(q.getQuestionText())
+                    .options(q.getOptions())
+                    .selectedIndex(selected)
+                    .correctIndex(q.getCorrectIndex())
+                    .correct(correct)
+                    .build());
+        }
+
+        int difficultyLevel;
+        if (score <= 3) difficultyLevel = 10;
+        else if (score <= 6) difficultyLevel = 8;
+        else if (score <= 8) difficultyLevel = 5;
+        else difficultyLevel = 2;
+
+        return InterviewDto.McqEvaluateResponse.builder()
+                .score(score)
+                .difficultyLevel(difficultyLevel)
+                .review(review)
+                .build();
+    }
+
     /* ── Start Session ── */
     @Transactional
     public InterviewDto.SessionResponse startSession(String email, InterviewDto.StartRequest request) {
@@ -169,6 +274,7 @@ public class InterviewService {
                 : "Software Engineer";
         String skills = "General";
         String expLevel = "Fresher";
+        Integer difficultyLevel = (request != null && request.getDifficultyLevel() != null) ? request.getDifficultyLevel() : 5;
 
         if (profile != null) {
             if (!profile.getSkills().isEmpty())
@@ -177,18 +283,28 @@ public class InterviewService {
                 expLevel = profile.getExperienceCategory();
         }
 
+        String mcqReviewJson = null;
+        Integer mcqScore = (request != null) ? request.getMcqScore() : null;
+        if (request != null && request.getMcqReview() != null) {
+            try { mcqReviewJson = mapper.writeValueAsString(request.getMcqReview()); }
+            catch (Exception ignored) {}
+        }
+
         InterviewSession session = InterviewSession.builder()
                 .student(student)
                 .targetRole(role)
                 .experienceLevel(expLevel)
                 .skills(skills)
                 .language(language)
+                .difficultyLevel(difficultyLevel)
+                .mcqScore(mcqScore)
+                .mcqReview(mcqReviewJson)
                 .status(SessionStatus.IN_PROGRESS)
                 .build();
         session = sessionRepo.save(session);
 
         // ask Groq for first question
-        String systemPrompt = buildSystemPrompt(role, expLevel, skills, language);
+        String systemPrompt = buildSystemPrompt(role, expLevel, skills, language, difficultyLevel);
         List<GroqService.Message> messages = List.of(
                 new GroqService.Message("system", systemPrompt),
                 new GroqService.Message("user", "Please start the interview with the first question.")
@@ -240,7 +356,7 @@ public class InterviewService {
 
         // build full conversation history for Groq
         List<InterviewQuestion> allQuestions = questionRepo.findBySessionOrderBySequenceNumber(session);
-        String systemPrompt = buildSystemPrompt(session.getTargetRole(), session.getExperienceLevel(), session.getSkills(), session.getLanguage());
+        String systemPrompt = buildSystemPrompt(session.getTargetRole(), session.getExperienceLevel(), session.getSkills(), session.getLanguage(), session.getDifficultyLevel());
 
         List<GroqService.Message> messages = new ArrayList<>();
         messages.add(new GroqService.Message("system", systemPrompt));
@@ -548,6 +664,14 @@ public class InterviewService {
         List<String> strengths = parseStringList(session.getStrengths());
         List<String> improvements = parseStringList(session.getImprovements());
 
+        List<InterviewDto.McqReviewItem> mcqReview = List.of();
+        if (session.getMcqReview() != null && !session.getMcqReview().isBlank()) {
+            try {
+                mcqReview = mapper.readValue(session.getMcqReview(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, InterviewDto.McqReviewItem.class));
+            } catch (Exception ignored) {}
+        }
+
         return InterviewDto.ReportResponse.builder()
                 .sessionId(session.getId())
                 .targetRole(session.getTargetRole())
@@ -564,6 +688,9 @@ public class InterviewService {
                 .createdAt(session.getCreatedAt() != null ? session.getCreatedAt().toString() : null)
                 .violationCount(session.getViolationCount())
                 .endedEarly(session.isEndedEarly())
+                .mcqScore(session.getMcqScore())
+                .difficultyLevel(session.getDifficultyLevel())
+                .mcqReview(mcqReview)
                 .build();
     }
 

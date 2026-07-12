@@ -7,8 +7,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 20MB
-      max-request-size: 25MB
+      max-file-size: 60MB
+      max-request-size: 65MB
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

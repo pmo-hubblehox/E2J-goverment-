@@ -4,6 +4,7 @@ import {
   Calendar, Upload, Check, X, FileText, ChevronDown,
 } from 'lucide-react';
 import api from '../../services/api';
+import IntroVideoRecorder from '../../components/IntroVideoRecorder';
 
 type JobTab = 'all' | 'recommended' | 'applied' | 'saved';
 type SubSection = 'jobs' | 'internship' | 'documents' | 'interview';
@@ -63,10 +64,11 @@ function ApplyModal({ job, onClose, onSuccess }: { job: ApiJob; onClose: () => v
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [introVideoUrl, setIntroVideoUrl] = useState<string | undefined>(undefined);
   const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const hasQuestions = (job.customQuestions?.length ?? 0) > 0;
-  const totalSteps = hasQuestions ? 3 : 2;
+  const totalSteps = hasQuestions ? 4 : 3;
 
   useEffect(() => {
     api.get('/student/profile/full')
@@ -101,14 +103,14 @@ function ApplyModal({ job, onClose, onSuccess }: { job: ApiJob; onClose: () => v
     finally { setUploadingResume(false); }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (videoUrl: string | undefined) => {
     if (!selectedResumeId) { setError('Please select a resume.'); return; }
     setSubmitting(true); setError('');
     try {
       const qaPayload = hasQuestions
         ? job.customQuestions.map((q, i) => ({ question: q, answer: answers[i] ?? '' }))
         : [];
-      await api.post(`/student/jobs/${job.id}/apply`, { resumeId: selectedResumeId, questionAnswers: qaPayload });
+      await api.post(`/student/jobs/${job.id}/apply`, { resumeId: selectedResumeId, questionAnswers: qaPayload, introVideoUrl: videoUrl });
       onSuccess();
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Failed to submit. Please try again.');
@@ -214,7 +216,18 @@ function ApplyModal({ job, onClose, onSuccess }: { job: ApiJob; onClose: () => v
             </div>
           )}
 
-          {step === 2 && hasQuestions && (
+          {step === 2 && (
+            <IntroVideoRecorder
+              studentName={profile?.firstName ? `${profile.firstName} ${profile.lastName ?? ''}`.trim() : 'unknown'}
+              onComplete={(url) => {
+                setIntroVideoUrl(url);
+                if (hasQuestions) { setStep(s => s + 1); }
+                else { handleSubmit(url); }
+              }}
+            />
+          )}
+
+          {step === 3 && hasQuestions && (
             <div>
               <p style={{ fontSize: '13px', color: SUB, marginBottom: '20px' }}>{job.companyName} has a few questions.</p>
               {job.customQuestions.map((q, i) => (
@@ -233,13 +246,13 @@ function ApplyModal({ job, onClose, onSuccess }: { job: ApiJob; onClose: () => v
             style={{ padding: '9px 24px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', fontSize: '13px', cursor: 'pointer', color: TEXT }}>
             {step === 0 ? 'Cancel' : 'Back'}
           </button>
-          {step < totalSteps - 1 ? (
+          {step === 2 ? null : step < totalSteps - 1 ? (
             <button onClick={() => { if (step === 0 && !selectedResumeId) { setError('Please select a resume.'); return; } setError(''); setStep(s => s + 1); }}
               style={{ padding: '9px 28px', borderRadius: '100px', border: 'none', background: PINK, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
               Next
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={submitting}
+            <button onClick={() => handleSubmit(introVideoUrl)} disabled={submitting}
               style={{ padding: '9px 28px', borderRadius: '100px', border: 'none', background: PINK, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
               {submitting ? 'Submitting…' : 'Submit'}
             </button>

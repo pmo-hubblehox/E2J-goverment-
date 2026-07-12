@@ -417,26 +417,35 @@ public class CounsellorController {
         String studentEmail          = booking.getStudent().getUser().getEmail();
         String studentName           = booking.getStudent().getUser().getName();
 
-        PsychometricReport report = psychometricReportRepo
-                .findTopByStudentOrderByCreatedAtDesc(booking.getStudent())
-                .orElse(null);
+        PsychometricReport report = (booking.getPsychometricReportId() != null)
+                ? psychometricReportRepo.findById(booking.getPsychometricReportId()).orElse(null)
+                : null;
 
-        if (report != null) {
-            if (!comment.isBlank())              report.setCounsellorComment(comment);
-            if (!keyObservations.isBlank())      report.setFeedbackKeyObservations(keyObservations);
-            if (!actionItems.isBlank())          report.setFeedbackActionItems(actionItems);
-            if (!resourcesRecommended.isBlank()) report.setFeedbackResourcesRecommended(resourcesRecommended);
-            report.setCounsellorName(c.getUser().getName());
-            report.setCommentedAt(java.time.LocalDateTime.now());
-
-            try {
-                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
-                if (body.containsKey("ratings"))  report.setFeedbackRatingsJson(om.writeValueAsString(body.get("ratings")));
-                if (body.containsKey("outcomes")) report.setFeedbackOutcomesJson(om.writeValueAsString(body.get("outcomes")));
-            } catch (Exception ignored) {}
-
-            psychometricReportRepo.save(report);
+        if (report == null) {
+            // No report linked to this booking (student had none at booking time, or link is stale) —
+            // create one scoped to this booking rather than silently dropping the counsellor's feedback.
+            report = PsychometricReport.builder()
+                    .student(booking.getStudent())
+                    .build();
+            report = psychometricReportRepo.save(report);
+            booking.setPsychometricReportId(report.getId());
+            bookingRepo.save(booking);
         }
+
+        if (!comment.isBlank())              report.setCounsellorComment(comment);
+        if (!keyObservations.isBlank())      report.setFeedbackKeyObservations(keyObservations);
+        if (!actionItems.isBlank())          report.setFeedbackActionItems(actionItems);
+        if (!resourcesRecommended.isBlank()) report.setFeedbackResourcesRecommended(resourcesRecommended);
+        report.setCounsellorName(c.getUser().getName());
+        report.setCommentedAt(java.time.LocalDateTime.now());
+
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            if (body.containsKey("ratings"))  report.setFeedbackRatingsJson(om.writeValueAsString(body.get("ratings")));
+            if (body.containsKey("outcomes")) report.setFeedbackOutcomesJson(om.writeValueAsString(body.get("outcomes")));
+        } catch (Exception ignored) {}
+
+        psychometricReportRepo.save(report);
 
         try {
             StringBuilder sb = new StringBuilder();

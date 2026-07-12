@@ -35,13 +35,15 @@ const TOPIC_META: Record<string, { color: string; bg: string; label: string }> =
   ROLE_SPECIFIC: { color: '#BE185D', bg: '#FCE7F3', label: 'Domain Knowledge' },
 };
 
-type Phase = 'setup' | 'starting' | 'ai_speaking' | 'listening' | 'processing' | 'done';
+type Phase = 'setup' | 'mcq' | 'starting' | 'ai_speaking' | 'listening' | 'processing' | 'done';
 
 interface SessionState {
   sessionId: number; questionId: number; questionText: string;
   topicArea: string; questionNumber: number; targetRole: string;
 }
 interface AspirationOption { roles: string[]; skills: string[]; experienceLevel: string; }
+interface McqQuestion { questionText: string; options: string[]; }
+interface McqReviewItem { questionText: string; options: string[]; selectedIndex: number | null; correctIndex: number; correct: boolean; }
 
 function Waveform({ active, color }: { active: boolean; color: string }) {
   return (
@@ -78,6 +80,13 @@ export default function InterviewSessionPage() {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [showTranscript, setShowTranscript] = useState(true);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  const [quizId, setQuizId] = useState('');
+  const [mcqQuestions, setMcqQuestions] = useState<McqQuestion[]>([]);
+  const [mcqAnswers, setMcqAnswers] = useState<(number | null)[]>([]);
+  const [mcqLoading, setMcqLoading] = useState(false);
+  const [mcqSubmitting, setMcqSubmitting] = useState(false);
+  const [mcqResult, setMcqResult] = useState<{ score: number; difficultyLevel: number; review: McqReviewItem[] } | null>(null);
 
   const recognitionRef   = useRef<any>(null);
   const ttsUtteranceRef  = useRef<SpeechSynthesisUtterance | null>(null);
@@ -132,14 +141,14 @@ export default function InterviewSessionPage() {
   }, []);
 
   useEffect(() => { return () => {
-    stopAudio(); stopListening();
+    stopAudio(); stopListening(); exitFullscreen();
     if (globalTimerRef.current) clearInterval(globalTimerRef.current);
     cameraStreamRef.current?.getTracks().forEach(t => t.stop());
   }; }, []);
 
   // Open camera when interview starts, close when done/exited
   useEffect(() => {
-    if (phase === 'setup') return;
+    if (phase === 'setup' || phase === 'mcq') return;
     if (phase === 'done') {
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
       cameraStreamRef.current = null;
@@ -169,6 +178,7 @@ export default function InterviewSessionPage() {
 
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const requestFullscreen = () => document.documentElement.requestFullscreen?.().catch(() => {});
+  const exitFullscreen = () => { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); };
 
   const pickVoice = (lang: string): SpeechSynthesisVoice | null => {
     const all = window.speechSynthesis.getVoices();
@@ -211,6 +221,7 @@ export default function InterviewSessionPage() {
       const data = res.data.data;
       if (data.isComplete) {
         setPhase('done');
+        exitFullscreen();
         await speakQuestion('Well done! You have completed the interview. Your detailed report is being prepared.', () => {});
         setTimeout(() => navigate(`/student/interview/${cur.sessionId}/report`), 4500);
         return;
@@ -275,15 +286,40 @@ export default function InterviewSessionPage() {
     resume();
   }, [resumeId]);
 
-  const beginInterview = async () => {
+  const beginInterview = async (difficultyLevel?: number) => {
     requestFullscreen(); setPhase('starting');
     try {
-      const res = await api.post('/student/interview/start', { selectedRole, language: selectedLang.label });
+      const res = await api.post('/student/interview/start', {
+        selectedRole, language: selectedLang.label, difficultyLevel,
+        mcqScore: mcqResult?.score, mcqReview: mcqResult?.review,
+      });
       const data = res.data.data;
       const s: SessionState = { sessionId: data.sessionId, questionId: data.questionId, questionText: data.questionText, topicArea: data.topicArea, questionNumber: data.questionNumber, targetRole: data.targetRole };
       setSession(s); setPhase('ai_speaking');
       speakQuestion(data.questionText, () => startListening());
     } catch { setPhase('setup'); setSetupStep(1); }
+  };
+
+  const startMcqRound = async () => {
+    setMcqLoading(true); setPhase('mcq'); setMcqResult(null);
+    try {
+      const res = await api.post('/student/interview/mcq/generate', { role: selectedRole });
+      const data = res.data.data;
+      setQuizId(data.quizId);
+      setMcqQuestions(data.questions);
+      setMcqAnswers(new Array(data.questions.length).fill(null));
+    } catch { setPhase('setup'); setSetupStep(2); }
+    finally { setMcqLoading(false); }
+  };
+
+  const submitMcq = async () => {
+    setMcqSubmitting(true);
+    try {
+      const res = await api.post('/student/interview/mcq/evaluate', { quizId, selectedAnswers: mcqAnswers });
+      const data = res.data.data;
+      setMcqResult(data);
+    } catch { /* keep quiz visible on failure */ }
+    finally { setMcqSubmitting(false); }
   };
 
   const topic = TOPIC_META[session?.topicArea ?? 'TECHNICAL_SKILLS'] ?? TOPIC_META.TECHNICAL_SKILLS;
@@ -419,6 +455,7 @@ export default function InterviewSessionPage() {
                 <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>⚠️ Interview Rules — Please Read</p>
                 <ul style={{ margin: 0, padding: '0 0 0 18px', color: '#7F1D1D', fontSize: '13px', lineHeight: 2 }}>
                   <li>Be in a quiet place before taking the interview</li>
+                  <li>You'll first take a 10-question quiz — your score sets the interview's difficulty</li>
                   <li>Do not switch tabs or open other windows</li>
                   <li>Do not exit fullscreen during the interview</li>
                   <li>Speak clearly — your answers are recorded and evaluated</li>
@@ -433,7 +470,7 @@ export default function InterviewSessionPage() {
                   style={{ flex: 1, padding: '14px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                   ← Back
                 </button>
-                <button onClick={beginInterview}
+                <button onClick={startMcqRound}
                   style={{ flex: 2, padding: '14px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(63,65,209,0.3)' }}>
                   <Mic size={18} /> Start Interview
                 </button>
@@ -441,6 +478,96 @@ export default function InterviewSessionPage() {
             </>
           )}
         </div>
+      </div>
+    );
+  }
+
+  /* ────────────────────────────────────────────
+     MCQ SCREENING ROUND
+  ──────────────────────────────────────────── */
+  if (phase === 'mcq') {
+    return (
+      <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px' }}>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <BrainCircuit size={20} color="#fff" />
+          </div>
+          <span style={{ fontSize: '16px', fontWeight: 700, color: PRIMARY }}>Quick Screening Quiz</span>
+        </div>
+
+        {mcqLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '80px 0' }}>
+            <Loader2 size={40} color={PRIMARY} style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: SUB, fontSize: '14px', margin: 0 }}>Generating your quiz for {selectedRole}…</p>
+          </div>
+        ) : mcqResult ? (
+          <div style={{ width: '100%', maxWidth: '640px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <CheckCircle size={40} color="#16A34A" />
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: TEXT }}>Quiz Complete! Score: {mcqResult.score}/10</h2>
+            <p style={{ color: SUB, fontSize: '13px', margin: '0 0 10px' }}>Review your answers below, then continue to the interview.</p>
+
+            <div style={{ width: '100%' }}>
+              {mcqResult.review.map((r, qi) => (
+                <div key={qi} style={{ background: '#fff', border: `1.5px solid ${r.correct ? '#86EFAC' : '#FCA5A5'}`, borderRadius: '12px', padding: '16px 18px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '15px', flexShrink: 0 }}>{r.correct ? '✅' : '❌'}</span>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: TEXT }}>{qi + 1}. {r.questionText}</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {r.options.map((opt, oi) => {
+                      const isCorrect = oi === r.correctIndex;
+                      const isSelected = oi === r.selectedIndex;
+                      const bg = isCorrect ? '#F0FDF4' : (isSelected && !isCorrect) ? '#FEF2F2' : '#fff';
+                      const border = isCorrect ? '#86EFAC' : (isSelected && !isCorrect) ? '#FCA5A5' : BORDER;
+                      const color = isCorrect ? '#15803D' : (isSelected && !isCorrect) ? '#B91C1C' : TEXT;
+                      return (
+                        <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', border: `1px solid ${border}`, borderRadius: '8px', background: bg }}>
+                          <span style={{ fontSize: '12px', color, fontWeight: isCorrect || isSelected ? 700 : 400 }}>{opt}</span>
+                          {isCorrect && <span style={{ fontSize: '11px', color: '#15803D', fontWeight: 700, marginLeft: 'auto' }}>Correct Answer</span>}
+                          {isSelected && !isCorrect && <span style={{ fontSize: '11px', color: '#B91C1C', fontWeight: 700, marginLeft: 'auto' }}>Your Answer</span>}
+                        </div>
+                      );
+                    })}
+                    {r.selectedIndex === null && (
+                      <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#B91C1C' }}>You did not answer this question.</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => beginInterview(mcqResult.difficultyLevel)}
+              style={{ width: '100%', padding: '14px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '4px', marginBottom: '32px' }}>
+              Continue to Interview →
+            </button>
+          </div>
+        ) : (
+          <div style={{ width: '100%', maxWidth: '640px' }}>
+            <p style={{ fontSize: '13px', color: SUB, marginBottom: '20px', textAlign: 'center' }}>
+              Answer all {mcqQuestions.length} questions, then submit.
+            </p>
+            {mcqQuestions.map((q, qi) => (
+              <div key={qi} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '18px 20px', marginBottom: '14px' }}>
+                <p style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 600, color: TEXT }}>{qi + 1}. {q.questionText}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {q.options.map((opt, oi) => (
+                    <label key={oi} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${mcqAnswers[qi] === oi ? PRIMARY : BORDER}`, borderRadius: '8px', cursor: 'pointer', background: mcqAnswers[qi] === oi ? '#EEF2FF' : '#fff' }}>
+                      <input type="radio" name={`mcq-${qi}`} checked={mcqAnswers[qi] === oi}
+                        onChange={() => setMcqAnswers(prev => prev.map((a, idx) => idx === qi ? oi : a))}
+                        style={{ accentColor: PRIMARY }} />
+                      <span style={{ fontSize: '13px', color: TEXT }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button onClick={submitMcq} disabled={mcqSubmitting || mcqAnswers.some(a => a === null)}
+              style={{ width: '100%', padding: '14px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '15px', fontWeight: 700, cursor: (mcqSubmitting || mcqAnswers.some(a => a === null)) ? 'not-allowed' : 'pointer', opacity: (mcqSubmitting || mcqAnswers.some(a => a === null)) ? 0.6 : 1, marginTop: '6px', marginBottom: '32px' }}>
+              {mcqSubmitting ? 'Submitting…' : 'Submit Quiz'}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -519,7 +646,7 @@ export default function InterviewSessionPage() {
             <p style={{ margin: '0 0 24px', fontSize: '14px', color: SUB, lineHeight: 1.6 }}>
               {session?.questionNumber && session.questionNumber > 1
                 ? 'A report will be generated based on the questions you\'ve answered so far.'
-                : 'Your progress will be saved but no report will be generated. You can resume this interview later.'}
+                : 'You can still view your screening quiz results. You can resume this interview later.'}
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={() => { setShowExitConfirm(false); if (session?.questionText) speakQuestion(session.questionText, () => {}); }}
@@ -527,10 +654,9 @@ export default function InterviewSessionPage() {
                 Continue
               </button>
               <button onClick={async () => {
-                  stopAudio(); stopListening();
-                  const hasAnswered = !!(session?.questionNumber && session.questionNumber > 1);
+                  stopAudio(); stopListening(); exitFullscreen();
                   if (session) { try { await api.post(`/student/interview/${session.sessionId}/abandon`); } catch { /* best-effort */ } }
-                  if (hasAnswered && session) {
+                  if (session) {
                     navigate(`/student/interview/${session.sessionId}/report`);
                   } else {
                     navigate('/student/interview');

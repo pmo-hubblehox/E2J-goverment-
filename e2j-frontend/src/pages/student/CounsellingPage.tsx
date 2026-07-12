@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, ChevronLeft, Clock, Calendar, CheckCircle, Loader2, Video, Briefcase, GraduationCap, Award, ExternalLink, MapPin, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Star, ChevronLeft, Clock, Calendar, CheckCircle, Loader2, Video, Briefcase, GraduationCap, Award, ExternalLink, MapPin, ChevronRight, MoreVertical, FileText, MessageSquare } from 'lucide-react';
 import api from '../../services/api';
 
 const PRIMARY = '#3F41D1';
@@ -65,6 +66,7 @@ const GRADIENTS = [
 ];
 
 export default function CounsellingPage() {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>('browse');
   const [search, setSearch] = useState('');
 
@@ -119,6 +121,7 @@ export default function CounsellingPage() {
   const [fbRatings, setFbRatings] = useState({ q1: 0, q2: 0, q3: 0, q4: 0 });
   const [fbComment, setFbComment] = useState('');
   const [fbSaving, setFbSaving] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState<number | null>(null);
 
   const [myBookings, setMyBookings]     = useState<BookingDetail[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -1038,8 +1041,8 @@ export default function CounsellingPage() {
           /* ── LIST VIEW ── */
           <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', overflow: 'hidden' }}>
             {/* Header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1.2fr 1fr 0.5fr', padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, background: BG }}>
-              {['Counselor Name ↑', 'Date ↑', 'Mode ↑', 'Link ↑', 'Feedback ↑', 'Status', 'Action'].map(h => (
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1fr 0.6fr', padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, background: BG }}>
+              {['Counselor Name ↑', 'Date ↑', 'Mode ↑', 'Link ↑', 'Status', 'Action'].map(h => (
                 <span key={h} style={{ fontSize: '12px', fontWeight: 600, color: SUB }}>{h}</span>
               ))}
             </div>
@@ -1056,29 +1059,51 @@ export default function CounsellingPage() {
                 : '--';
               const linkShort = b.meetLink ? b.meetLink.replace('https://', '').substring(0, 18) + '…' : '--';
               return (
-                <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1.2fr 1fr 0.5fr', padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, alignItems: 'center' }}>
+                <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1fr 0.6fr', padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, alignItems: 'center' }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{b.counsellorName}</span>
                   <span style={{ fontSize: '13px', color: TEXT }}>{dateFormatted}</span>
                   <span style={{ fontSize: '13px', color: TEXT }}>Online</span>
                   <span style={{ fontSize: '13px', color: b.meetLink ? PRIMARY : SUB }}>
                     {b.meetLink ? <a href={b.meetLink} target="_blank" rel="noreferrer" style={{ color: PRIMARY, textDecoration: 'none' }}>{linkShort}</a> : '--'}
                   </span>
-                  <span style={{ fontSize: '13px' }}>
-                    {b.status === 'COMPLETED' ? (
-                      b.hasFeedback ? (
-                        <span style={{ color: '#15803D', fontWeight: 600, fontSize: '12px' }}>✓ Done</span>
-                      ) : (
-                        <span onClick={() => { setFbRatings({ q1:0,q2:0,q3:0,q4:0 }); setFbComment(''); setFeedbackModal(b); }}
-                          style={{ color: PRIMARY, fontWeight: 700, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>GIVE FEEDBACK</span>
-                      )
-                    ) : '--'}
-                  </span>
                   <span>
                     <span style={{ padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, background: sc.bg, color: sc.color }}>
                       {sc.label}
                     </span>
                   </span>
-                  <span style={{ fontSize: '18px', color: SUB, cursor: 'pointer', textAlign: 'center' }}>⋮</span>
+                  <span style={{ position: 'relative', textAlign: 'center' }}>
+                    <button onClick={() => setActionMenuOpen(actionMenuOpen === b.id ? null : b.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB, padding: '4px', display: 'inline-flex' }}>
+                      <MoreVertical size={16} />
+                    </button>
+                    {actionMenuOpen === b.id && (
+                      <>
+                        <div onClick={() => setActionMenuOpen(null)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                        <div style={{ position: 'absolute', right: 0, top: '28px', zIndex: 11, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '180px', overflow: 'hidden', textAlign: 'left' }}>
+                          {b.status === 'COMPLETED' ? (
+                            <>
+                              <button onClick={() => { setActionMenuOpen(null); navigate('/student/aspiration'); }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left' }}>
+                                <FileText size={14} color={PRIMARY} /> View Report
+                              </button>
+                              {b.hasFeedback ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', fontSize: '13px', color: '#15803D' }}>
+                                  <CheckCircle size={14} /> Feedback Submitted
+                                </div>
+                              ) : (
+                                <button onClick={() => { setActionMenuOpen(null); setFbRatings({ q1:0,q2:0,q3:0,q4:0 }); setFbComment(''); setFeedbackModal(b); }}
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left', borderTop: `1px solid ${BORDER}` }}>
+                                  <MessageSquare size={14} color={PRIMARY} /> Give Feedback
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <div style={{ padding: '10px 14px', fontSize: '12px', color: SUB }}>No actions available yet</div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </span>
                 </div>
               );
             })}

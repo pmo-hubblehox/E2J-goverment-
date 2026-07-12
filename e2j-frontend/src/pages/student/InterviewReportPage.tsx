@@ -39,6 +39,10 @@ interface Question {
   aiScore: number; aiFeedback: string; isFollowUp: boolean;
 }
 
+interface McqReviewItem {
+  questionText: string; options: string[]; selectedIndex: number | null; correctIndex: number; correct: boolean;
+}
+
 interface Report {
   sessionId: number; targetRole: string; experienceLevel: string; status: string;
   overallScore: number; readinessBand: string; reportSummary: string;
@@ -47,6 +51,7 @@ interface Report {
   topicScores: { topicArea: string; score: number; questionCount: number }[];
   questions: Question[];
   createdAt: string; violationCount: number; endedEarly: boolean;
+  mcqScore: number | null; difficultyLevel: number | null; mcqReview: McqReviewItem[];
 }
 
 function ScoreRing({ score }: { score: number }) {
@@ -163,6 +168,59 @@ function QuestionRow({ q, targetRole }: { q: Question; targetRole: string }) {
   );
 }
 
+function McqReviewSection({ mcqScore, mcqReview }: { mcqScore: number | null; mcqReview: McqReviewItem[] }) {
+  const [open, setOpen] = useState(false);
+  if (mcqScore === null || mcqReview.length === 0) return null;
+  const scoreColor = mcqScore >= 8 ? '#15803D' : mcqScore >= 5 ? '#92400E' : '#B91C1C';
+
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '18px' }}>📝</span>
+          <div style={{ textAlign: 'left' }}>
+            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: TEXT }}>Pre-Interview Screening Quiz</h4>
+            <p style={{ margin: 0, fontSize: '12px', color: SUB }}>Used to calibrate this interview's difficulty</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 700, color: scoreColor }}>{mcqScore}/10</span>
+          {open ? <ChevronUp size={14} color={SUB} /> : <ChevronDown size={14} color={SUB} />}
+        </div>
+      </button>
+      {open && (
+        <div style={{ marginTop: '18px' }}>
+          {mcqReview.map((r, qi) => (
+            <div key={qi} style={{ border: `1.5px solid ${r.correct ? '#86EFAC' : '#FCA5A5'}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', flexShrink: 0 }}>{r.correct ? '✅' : '❌'}</span>
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: TEXT }}>{qi + 1}. {r.questionText}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {r.options.map((opt, oi) => {
+                  const isCorrect = oi === r.correctIndex;
+                  const isSelected = oi === r.selectedIndex;
+                  const bg = isCorrect ? '#F0FDF4' : (isSelected && !isCorrect) ? '#FEF2F2' : '#FAFBFF';
+                  const border = isCorrect ? '#86EFAC' : (isSelected && !isCorrect) ? '#FCA5A5' : BORDER;
+                  const color = isCorrect ? '#15803D' : (isSelected && !isCorrect) ? '#B91C1C' : TEXT;
+                  return (
+                    <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 11px', border: `1px solid ${border}`, borderRadius: '7px', background: bg }}>
+                      <span style={{ fontSize: '12px', color, fontWeight: isCorrect || isSelected ? 700 : 400 }}>{opt}</span>
+                      {isCorrect && <span style={{ fontSize: '10px', color: '#15803D', fontWeight: 700, marginLeft: 'auto' }}>Correct</span>}
+                      {isSelected && !isCorrect && <span style={{ fontSize: '10px', color: '#B91C1C', fontWeight: 700, marginLeft: 'auto' }}>Your Answer</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopicSection({ t, questions, targetRole }: {
   t: { topicArea: string; score: number; questionCount: number };
   questions: Question[];
@@ -264,6 +322,17 @@ export default function InterviewReportPage() {
         </div>
       )}
 
+      {report.questions.length === 0 && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#F1F5F9', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
+          <AlertCircle size={18} color={SUB} style={{ flexShrink: 0, marginTop: '1px' }} />
+          <p style={{ margin: 0, fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>
+            This interview was ended before any questions were answered, so there's no interview report — but your screening quiz results are available below.
+          </p>
+        </div>
+      )}
+
+      {report.questions.length > 0 && (
+      <>
       {/* Row 1: Score ring + Topic Breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '20px', marginBottom: '20px', alignItems: 'start' }}>
         {/* Score ring + band */}
@@ -341,6 +410,10 @@ export default function InterviewReportPage() {
           }
         </div>
       </div>
+      </>
+      )}
+
+      <McqReviewSection mcqScore={report.mcqScore} mcqReview={report.mcqReview} />
 
       {/* Row 4: Proctoring */}
       <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '24px' }}>

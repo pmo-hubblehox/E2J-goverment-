@@ -15,6 +15,7 @@ public class JobApplicationDto {
     public static class ApplyRequest {
         private Long resumeId;
         private List<Map<String, String>> questionAnswers;
+        private String introVideoUrl;
     }
 
     // ── Student: my applications ──────────────────────────────
@@ -30,6 +31,7 @@ public class JobApplicationDto {
         private String postingType;
         private String resumeUrl;
         private String resumeFileName;
+        private String introVideoUrl;
         private String stage;
         private Integer currentRound;
         private LocalDateTime appliedAt;
@@ -71,6 +73,7 @@ public class JobApplicationDto {
             }
             r.resumeUrl = a.getResumeUrl();
             r.resumeFileName = a.getResumeFileName();
+            r.introVideoUrl = a.getIntroVideoUrl();
             r.stage = a.getStage() != null ? a.getStage().name() : null;
             r.currentRound = a.getCurrentRound();
             r.appliedAt = a.getAppliedAt();
@@ -114,6 +117,7 @@ public class JobApplicationDto {
         private String studentPhone;
         private String resumeUrl;
         private String resumeFileName;
+        private String introVideoUrl;
         private String stage;
         private Integer currentRound;
         private LocalDateTime appliedAt;
@@ -158,6 +162,7 @@ public class JobApplicationDto {
             }
             r.resumeUrl = a.getResumeUrl();
             r.resumeFileName = a.getResumeFileName();
+            r.introVideoUrl = a.getIntroVideoUrl();
             r.stage = a.getStage() != null ? a.getStage().name() : null;
             r.currentRound = a.getCurrentRound();
             r.appliedAt = a.getAppliedAt();

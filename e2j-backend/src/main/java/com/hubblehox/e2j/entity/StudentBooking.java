@@ -37,6 +37,9 @@ public class StudentBooking {
     private String meetLink;
     private String notes;
 
+    /** Links this booking to the specific PsychometricReport the counsellor's feedback should attach to */
+    private Long psychometricReportId;
+
     @Column(columnDefinition = "TEXT")
     private String q1Interests;
     @Column(columnDefinition = "TEXT")
