@@ -684,16 +684,20 @@ export default function BookedSessionPage() {
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {b.status === 'CONFIRMED' && (
-                          <button onClick={() => handleMarkComplete(b.id)} disabled={completingId === b.id}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#DCFCE7', border: 'none', borderRadius: '6px', color: '#16A34A', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: completingId === b.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: completingId === b.id ? 0.6 : 1 }}>
-                            {completingId === b.id ? 'Marking…' : 'Mark Complete'}
-                          </button>
-                        )}
-                        {(b.psychometricReport || (b.questionnaire && Object.values(b.questionnaire).some(v => v))) && (
-                          <button onClick={() => setViewingReport(b)} disabled={b.status !== 'COMPLETED'}
-                            title={b.status !== 'COMPLETED' ? 'Mark the session completed first' : undefined}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: b.status === 'COMPLETED' ? '#EEF2FF' : '#F1F5F9', border: 'none', borderRadius: '6px', color: b.status === 'COMPLETED' ? '#3F41D1' : '#94A3B8', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: b.status === 'COMPLETED' ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                        {b.status === 'CONFIRMED' && (() => {
+                          const hasReport = !!(b.psychometricReport?.counsellorComment || b.psychometricReport?.feedbackKeyObservations
+                            || b.psychometricReport?.feedbackActionItems || b.psychometricReport?.feedbackResourcesRecommended);
+                          return (
+                            <button onClick={() => handleMarkComplete(b.id)} disabled={completingId === b.id || !hasReport}
+                              title={!hasReport ? 'Submit the session report first' : undefined}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: hasReport ? '#DCFCE7' : '#F1F5F9', border: 'none', borderRadius: '6px', color: hasReport ? '#16A34A' : '#94A3B8', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: (completingId === b.id || !hasReport) ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: completingId === b.id ? 0.6 : 1 }}>
+                              {completingId === b.id ? 'Marking…' : 'Mark Complete'}
+                            </button>
+                          );
+                        })()}
+                        {b.status !== 'CANCELLED' && (
+                          <button onClick={() => setViewingReport(b)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#EEF2FF', border: 'none', borderRadius: '6px', color: '#3F41D1', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                             <FileText size={11} /> Report
                           </button>
                         )}

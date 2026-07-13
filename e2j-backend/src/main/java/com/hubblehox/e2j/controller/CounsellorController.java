@@ -409,6 +409,14 @@ public class CounsellorController {
                 .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
         if (booking.getStatus() != StudentBooking.Status.CONFIRMED)
             throw new AppException("Only a confirmed session can be marked completed", HttpStatus.CONFLICT);
+
+        boolean hasReport = booking.getPsychometricReportId() != null && psychometricReportRepo.findById(booking.getPsychometricReportId())
+                .map(r -> r.getCounsellorComment() != null || r.getFeedbackKeyObservations() != null
+                        || r.getFeedbackActionItems() != null || r.getFeedbackResourcesRecommended() != null)
+                .orElse(false);
+        if (!hasReport)
+            throw new AppException("Submit the session report before marking it completed", HttpStatus.CONFLICT);
+
         booking.setStatus(StudentBooking.Status.COMPLETED);
         bookingRepo.save(booking);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("status", booking.getStatus().name()), "Session marked completed"));
@@ -426,8 +434,8 @@ public class CounsellorController {
         StudentBooking booking = bookingRepo.findById(id)
                 .filter(b -> b.getCounsellor().getId().equals(c.getId()))
                 .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
-        if (booking.getStatus() != StudentBooking.Status.COMPLETED)
-            throw new AppException("Mark the session as completed before sharing a report", HttpStatus.CONFLICT);
+        if (booking.getStatus() == StudentBooking.Status.CANCELLED)
+            throw new AppException("Cannot add a report to a cancelled session", HttpStatus.CONFLICT);
 
         String comment               = body.getOrDefault("comment", "").toString().strip();
         String keyObservations       = body.getOrDefault("keyObservations", "").toString().strip();
