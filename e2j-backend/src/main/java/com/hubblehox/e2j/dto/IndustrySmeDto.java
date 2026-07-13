@@ -11,6 +11,7 @@ public class IndustrySmeDto {
     @Data
     public static class Request {
         private String smeName;
+        private String email;
         private String expertiseArea;   // JSON array
         private String bio;
         private LocalDate availableFrom;
@@ -28,6 +29,7 @@ public class IndustrySmeDto {
     public static class Response {
         private Long id;
         private String smeName;
+        private String email;
         private String expertiseArea;
         private String bio;
         private LocalDate availableFrom;
@@ -46,6 +48,7 @@ public class IndustrySmeDto {
             Response r = new Response();
             r.id = s.getId();
             r.smeName = s.getSmeName();
+            r.email = s.getEmail();
             r.expertiseArea = s.getExpertiseArea();
             r.bio = s.getBio();
             r.availableFrom = s.getAvailableFrom();

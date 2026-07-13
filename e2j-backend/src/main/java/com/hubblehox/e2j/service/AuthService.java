@@ -255,6 +255,10 @@ public class AuthService {
         return doLogin(email, rawPassword, User.Role.BOS_MEMBER);
     }
 
+    public AuthDto.LoginResponse loginSme(String email, String rawPassword) {
+        return doLogin(email, rawPassword, User.Role.SME);
+    }
+
     /** Universal login — works for any role. Used by the shared login page. */
     public AuthDto.LoginResponse loginAny(String email, String rawPassword) {
         User user = userRepository.findByEmail(email)

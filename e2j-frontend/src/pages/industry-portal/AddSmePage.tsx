@@ -197,6 +197,7 @@ function ExpertiseSelect({ selected, onChange }: { selected: string[]; onChange:
 export default function AddSmePage() {
   const navigate = useNavigate();
   const [smeName, setSmeName] = useState('');
+  const [email, setEmail] = useState('');
   const [expertiseArea, setExpertiseArea] = useState<string[]>([]);
   const [bio, setBio] = useState('');
   const [availableFrom, setAvailableFrom] = useState('');
@@ -216,10 +217,12 @@ export default function AddSmePage() {
 
   const handleSubmit = async () => {
     if (!smeName) return alert('SME Name is required.');
+    if (!email) return alert('Email is required.');
     setSaving(true);
     try {
       await api.post('/industry-portal/sme', {
         smeName,
+        email,
         expertiseArea: JSON.stringify(expertiseArea),
         bio,
         availableFrom: availableFrom || null,
@@ -254,6 +257,15 @@ export default function AddSmePage() {
             placeholder=""
             style={{ width: '100%', height: '56px', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '0 14px', fontSize: '14px', outline: 'none', background: '#fff', color: TEXT, boxSizing: 'border-box' as const }} />
         </div>
+      </div>
+
+      {/* Email */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: SUB, marginBottom: '6px' }}>
+          Email <span style={{ color: '#E6393E' }}>*</span> <span style={{ fontWeight: 400 }}>(used to create their login)</span>
+        </label>
+        <input value={email} onChange={e => setEmail(e.target.value)} type="email"
+          style={{ width: '100%', height: '48px', border: `1.5px solid ${BORDER}`, borderRadius: '8px', padding: '0 14px', fontSize: '14px', outline: 'none', background: '#fff', color: TEXT, boxSizing: 'border-box' as const }} />
       </div>
 
       {/* Expertise Area */}

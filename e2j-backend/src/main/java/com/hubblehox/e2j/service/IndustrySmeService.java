@@ -65,6 +65,7 @@ public class IndustrySmeService {
 
     private void apply(IndustrySme s, IndustrySmeDto.Request r) {
         if (r.getSmeName() != null) s.setSmeName(r.getSmeName());
+        if (r.getEmail() != null) s.setEmail(r.getEmail());
         if (r.getExpertiseArea() != null) s.setExpertiseArea(r.getExpertiseArea());
         if (r.getBio() != null) s.setBio(r.getBio());
         if (r.getAvailableFrom() != null) s.setAvailableFrom(r.getAvailableFrom());

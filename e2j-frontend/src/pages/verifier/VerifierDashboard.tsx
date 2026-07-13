@@ -564,13 +564,19 @@ function InstituteReviewPanel({ app, onClose, onAction }: {
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function VerifierDashboard() {
-  const [tab, setTab]         = useState<'industry' | 'institute' | 'curriculum' | 'psychometric'>('industry');
+  const [tab, setTab]         = useState<'industry' | 'institute' | 'curriculum' | 'psychometric' | 'workshops'>('industry');
   // Psychometric tab state
   const [pqQuestions, setPqQuestions]       = useState<any[]>([]);
   const [pqLoading, setPqLoading]           = useState(false);
   const [pqUploading, setPqUploading]       = useState(false);
   const [pqUploadMsg, setPqUploadMsg]       = useState('');
   const [pqDeleting, setPqDeleting]         = useState<number | null>(null);
+  // Workshops tab state
+  const [workshops, setWorkshops]           = useState<any[]>([]);
+  const [workshopsLoading, setWorkshopsLoading] = useState(false);
+  const [workshopActing, setWorkshopActing] = useState<number | null>(null);
+  const [workshopRejectTarget, setWorkshopRejectTarget] = useState<any | null>(null);
+  const [workshopRejectReason, setWorkshopRejectReason] = useState('');
   const [apps, setApps]       = useState<Application[]>([]);
   const [institutes, setInstitutes] = useState<InstituteApp[]>([]);
   const [loading, setLoading] = useState(true);
@@ -612,7 +618,31 @@ export default function VerifierDashboard() {
       .finally(() => setPqLoading(false));
   };
 
-  useEffect(() => { load(); loadInstitutes(); loadCurricula(); }, []);
+  const loadWorkshops = () => {
+    setWorkshopsLoading(true);
+    api.get('/verifier/workshops')
+      .then(res => setWorkshops(res.data?.data ?? []))
+      .catch(() => setWorkshops([]))
+      .finally(() => setWorkshopsLoading(false));
+  };
+
+  const approveWorkshop = async (id: number) => {
+    setWorkshopActing(id);
+    try { await api.put(`/verifier/workshops/${id}/approve`); loadWorkshops(); }
+    finally { setWorkshopActing(null); }
+  };
+
+  const rejectWorkshop = async () => {
+    if (!workshopRejectTarget) return;
+    setWorkshopActing(workshopRejectTarget.id);
+    try {
+      await api.put(`/verifier/workshops/${workshopRejectTarget.id}/reject`, { reason: workshopRejectReason });
+      setWorkshopRejectTarget(null); setWorkshopRejectReason('');
+      loadWorkshops();
+    } finally { setWorkshopActing(null); }
+  };
+
+  useEffect(() => { load(); loadInstitutes(); loadCurricula(); loadWorkshops(); }, []);
 
   const handleIndustryAction = async (id: number, action: 'approve' | 'reject' | 'under-review', reason?: string) => {
     if (action === 'approve')     await api.put(`/verifier/industry-partners/${id}/approve`);
@@ -670,11 +700,13 @@ export default function VerifierDashboard() {
           ['institute',    'Institutes'],
           ['curriculum',   `Curriculum Approvals${pendingCurricula.length > 0 ? ` (${pendingCurricula.length})` : ''}`],
           ['psychometric', 'Psychometric Questions'],
+          ['workshops',    `Workshop Approvals${workshops.length > 0 ? ` (${workshops.length})` : ''}`],
         ] as const).map(([key, label]) => (
           <button key={key} onClick={() => {
             setTab(key as typeof tab);
             setFilter('ALL');
             if (key === 'psychometric') loadPsychometricQuestions();
+            if (key === 'workshops') loadWorkshops();
           }}
             style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none', borderBottom: tab === key ? `2px solid ${PRIMARY}` : '2px solid transparent', color: tab === key ? PRIMARY : SUB, marginBottom: '-1px', whiteSpace: 'nowrap' }}>
             {label}
@@ -683,7 +715,7 @@ export default function VerifierDashboard() {
       </div>
 
       {/* Summary cards + filters — hidden on curriculum tab */}
-      {tab !== 'curriculum' && tab !== 'psychometric' && (
+      {tab !== 'curriculum' && tab !== 'psychometric' && tab !== 'workshops' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
             {[
@@ -952,6 +984,68 @@ export default function VerifierDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'workshops' && (
+        <div>
+          <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 700, color: TEXT }}>Pending Workshops</h3>
+          {workshopsLoading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: SUB, fontSize: '13px' }}>Loading…</div>
+          ) : workshops.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#94A3B8', fontSize: '14px' }}>No workshops pending review.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {workshops.map((w: any) => (
+                <div key={w.id} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{w.title}</div>
+                      <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{w.posterName} · {w.targetRole} · {w.trainerName ?? 'No trainer assigned'}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: SUB, flexWrap: 'wrap', marginBottom: '12px' }}>
+                    <span>{w.mode === 'ONLINE' ? 'Online' : `${w.city}${w.state ? `, ${w.state}` : ''}`}</span>
+                    <span>{w.sessionDate} {w.sessionTime}</span>
+                    <span>{w.totalSeats} seats</span>
+                    <span>{w.feeAmount ? `₹${w.feeAmount}` : 'Free'}</span>
+                  </div>
+                  {w.description && <p style={{ margin: '0 0 12px', fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>{w.description}</p>}
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => approveWorkshop(w.id)} disabled={workshopActing === w.id}
+                      style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', background: '#16A34A', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: workshopActing === w.id ? 'not-allowed' : 'pointer', opacity: workshopActing === w.id ? 0.6 : 1 }}>
+                      Approve
+                    </button>
+                    <button onClick={() => { setWorkshopRejectTarget(w); setWorkshopRejectReason(''); }} disabled={workshopActing === w.id}
+                      style={{ padding: '8px 20px', borderRadius: '100px', border: '1px solid #FCA5A5', background: '#fff', color: '#B91C1C', fontSize: '12px', fontWeight: 600, cursor: workshopActing === w.id ? 'not-allowed' : 'pointer' }}>
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {workshopRejectTarget && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '420px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: 700, color: TEXT }}>Reject "{workshopRejectTarget.title}"</h3>
+                <textarea value={workshopRejectReason} onChange={e => setWorkshopRejectReason(e.target.value)} rows={3}
+                  placeholder="Reason for rejection"
+                  style={{ width: '100%', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', resize: 'vertical' as const }} />
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                  <button onClick={() => setWorkshopRejectTarget(null)}
+                    style={{ flex: 1, padding: '10px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                  <button onClick={rejectWorkshop} disabled={workshopActing === workshopRejectTarget.id}
+                    style={{ flex: 1, padding: '10px', borderRadius: '100px', border: 'none', background: '#DC2626', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    Reject
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

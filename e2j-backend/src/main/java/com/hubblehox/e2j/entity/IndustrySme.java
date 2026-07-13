@@ -20,6 +20,7 @@ public class IndustrySme {
     private IndustryPartner partner;
 
     private String smeName;
+    private String email;
 
     @Column(columnDefinition = "TEXT")
     private String expertiseArea;   // JSON array of strings

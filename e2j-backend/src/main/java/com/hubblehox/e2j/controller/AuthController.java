@@ -143,6 +143,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Login successful"));
     }
 
+    @PostMapping("/sme/login")
+    public ResponseEntity<ApiResponse<AuthDto.LoginResponse>> smeLogin(@Valid @RequestBody AuthDto.LoginRequest req) {
+        AuthDto.LoginResponse response = authService.loginSme(req.getEmail(), req.getPassword());
+        return ResponseEntity.ok(ApiResponse.ok(response, "Login successful"));
+    }
+
     /** Universal login endpoint — used by the shared login page for BOS members and other roles */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthDto.LoginResponse>> universalLogin(@Valid @RequestBody AuthDto.LoginRequest req) {

@@ -158,6 +158,7 @@ export default function FacultyPage() {
 
   // Add form state
   const [smeName, setSmeName] = useState('');
+  const [email, setEmail] = useState('');
   const [expertise, setExpertise] = useState<string[]>([]);
   const [bio, setBio] = useState('');
   const [months, setMonths] = useState<string[]>([]);
@@ -175,7 +176,7 @@ export default function FacultyPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.post('/institute/faculty', { name: smeName, expertise, bio, months, days, timeSlots, deliveryModes });
+      await api.post('/institute/faculty', { name: smeName, email, expertise, bio, months, days, timeSlots, deliveryModes });
       setView('list');
     } catch { /* noop */ } finally { setSaving(false); }
   };
@@ -325,6 +326,12 @@ export default function FacultyPage() {
         <div style={{ position: 'relative', marginBottom: '20px' }}>
           <span style={{ position: 'absolute', top: '-9px', left: '10px', background: '#fff', padding: '0 4px', fontSize: '11px', color: '#64748B', zIndex: 1 }}>SME Name *</span>
           <input value={smeName} onChange={e => setSmeName(e.target.value)} placeholder="Enter SME name" style={{ ...inputSt, padding: '12px 14px' }} />
+        </div>
+
+        {/* Email */}
+        <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <span style={{ position: 'absolute', top: '-9px', left: '10px', background: '#fff', padding: '0 4px', fontSize: '11px', color: '#64748B', zIndex: 1 }}>Email * (used to create their login)</span>
+          <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Enter email" style={{ ...inputSt, padding: '12px 14px' }} />
         </div>
 
         {/* Expertise Area */}

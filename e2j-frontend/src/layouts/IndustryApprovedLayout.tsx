@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet, Navigate } from 'react-router-dom';
 import {
   Home, Briefcase, Users, BookOpen, Trophy, GraduationCap,
   LayoutDashboard, User, FileText, Settings, LogOut,
-  Bell, ChevronDown, ChevronRight, KeyRound, HelpCircle, Building2,
+  Bell, ChevronDown, ChevronRight, KeyRound, HelpCircle, Building2, CalendarCheck,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { ChangePasswordModal, HelpCenterModal } from '../components/ProfileModals';
@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { label: 'Resume...', icon: BookOpen, to: '/industry-portal/resumes' },
   { label: 'Campus...', icon: Trophy, to: '/industry-portal/campus' },
   { label: 'SME Listing', icon: GraduationCap, to: '/industry-portal/sme' },
+  { label: 'Workshops', icon: CalendarCheck, to: '/industry-portal/workshops' },
   { label: 'Venues', icon: Building2, to: '/industry-portal/venues' },
   { label: 'Dashboard', icon: LayoutDashboard, to: '/industry-portal/dashboard' },
   { label: 'Profile', icon: User, to: '/industry-portal/profile' },

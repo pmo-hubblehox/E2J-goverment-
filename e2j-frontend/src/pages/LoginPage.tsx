@@ -50,6 +50,7 @@ export default function LoginPage() {
   const isIndustry       = role === 'industry';
   const isVerifier       = role === 'verifier';
   const isBos            = role === 'bos';
+  const isSme            = role === 'sme';
   const { setAuth } = useAuth();
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
@@ -68,11 +69,13 @@ export default function LoginPage() {
         : isIndustry       ? '/auth/industry/login'
         : isVerifier       ? '/auth/verifier/login'
         : isBos            ? '/auth/bos/login'
+        : isSme            ? '/auth/sme/login'
         : '/auth/login';
       const res = await api.post<ApiResponse<LoginResponse>>(endpoint, data);
       const { token, user } = res.data.data;
       setAuth(user, token);
       if (user.role === 'BOS_MEMBER') { navigate('/bos'); return; }
+      if (user.role === 'SME') { navigate('/sme'); return; }
       if (user.role === 'COUNSELLOR') {
         try {
           const statusRes = await api.get('/counsellor/onboarding/status');
@@ -102,6 +105,7 @@ export default function LoginPage() {
         INSTITUTE: '/institute',
         VERIFIER: '/verifier',
         BOS_MEMBER: '/bos',
+        SME: '/sme',
       };
       navigate(map[user.role] ?? '/');
     } catch (err: any) {
@@ -115,6 +119,7 @@ export default function LoginPage() {
     : isIndustry       ? 'Industry Partner Sign In'
     : isVerifier       ? 'Verifier Sign In'
     : isBos            ? 'BOS Member Sign In'
+    : isSme            ? 'SME Sign In'
     : 'Student Sign In';
 
   return (

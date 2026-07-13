@@ -55,5 +55,5 @@ public class User implements UserDetails {
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return enabled; }
 
-    public enum Role { STUDENT, INSTITUTE, VERIFIER, COUNSELLOR, HEAD_COUNSELLOR, INDUSTRY_PARTNER, BOS_MEMBER }
+    public enum Role { STUDENT, INSTITUTE, VERIFIER, COUNSELLOR, HEAD_COUNSELLOR, INDUSTRY_PARTNER, BOS_MEMBER, SME }
 }

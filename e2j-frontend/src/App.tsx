@@ -32,12 +32,14 @@ import CounsellingPage from './pages/student/CounsellingPage';
 import StudentProfilePage from './pages/student/ProfilePage';
 import ProfileSetupPage from './pages/student/ProfileSetupPage';
 import ApplicationsPage from './pages/student/ApplicationsPage';
+import StudentWorkshopsPage from './pages/student/WorkshopsPage';
 
 import InstituteDashboard from './pages/institute/InstituteDashboard';
 import CurriculumPage from './pages/institute/CurriculumPage';
 import DashboardAnalyticsPage from './pages/institute/DashboardAnalyticsPage';
 import ProgramsPage from './pages/institute/ProgramsPage';
 import FacultyPage from './pages/institute/FacultyPage';
+import InstituteWorkshopsPage from './pages/institute/WorkshopsPage';
 import VenuesPage from './pages/institute/VenuesPage';
 import InstituteLabBookingPage from './pages/institute/InstituteLabBookingPage';
 import CampusRecruitmentPage from './pages/institute/CampusRecruitmentPage';
@@ -47,6 +49,7 @@ import InstituteProfilePage from './pages/institute/ProfilePage';
 
 import VerifierDashboard from './pages/verifier/VerifierDashboard';
 import BosApprovalPage from './pages/bos/BosApprovalPage';
+import SmeDashboardPage from './pages/sme/SmeDashboardPage';
 import CounsellorPendingPage from './pages/counsellor/CounsellorPendingPage';
 import HeadCounsellorDashboard from './pages/head-counsellor/HeadCounsellorDashboard';
 
@@ -76,6 +79,7 @@ import AddSmePage from './pages/industry-portal/AddSmePage';
 import IndustryDashboardPage from './pages/industry-portal/IndustryDashboardPage';
 import IndustryVenuesPage from './pages/industry-portal/IndustryVenuesPage';
 import IndustryReportsPage from './pages/industry-portal/IndustryReportsPage';
+import IndustryWorkshopsPage from './pages/industry-portal/WorkshopsPage';
 
 export default function App() {
   return (
@@ -128,6 +132,7 @@ export default function App() {
           <Route path="/student/jobs" element={<JobsPage />} />
           <Route path="/student/applications" element={<ApplicationsPage />} />
           <Route path="/student/counselling" element={<CounsellingPage />} />
+          <Route path="/student/workshops" element={<StudentWorkshopsPage />} />
           <Route path="/student/profile-view" element={<StudentProfilePage />} />
           <Route path="/student/skill-gap/report" element={<SkillGapReportPage />} />
           <Route path="/student/interview" element={<InterviewHistoryPage />} />
@@ -150,6 +155,7 @@ export default function App() {
             <Route path="/institute/curriculum" element={<CurriculumPage />} />
             <Route path="/institute/students" element={<StudentsPage />} />
             <Route path="/institute/faculty" element={<FacultyPage />} />
+            <Route path="/institute/workshops" element={<InstituteWorkshopsPage />} />
             <Route path="/institute/venues" element={<InstituteLabBookingPage />} />
             <Route path="/institute/venues/availability" element={<VenuesPage initialSubView="availability" />} />
             <Route path="/institute/recruitment" element={<CampusRecruitmentPage />} />
@@ -165,6 +171,9 @@ export default function App() {
 
         {/* BOS Member */}
         <Route path="/bos" element={<BosApprovalPage />} />
+
+        {/* SME */}
+        <Route path="/sme" element={<SmeDashboardPage />} />
 
         {/* Industry Partner (pre-approval) */}
         <Route element={<DashboardLayout />}>
@@ -194,6 +203,7 @@ export default function App() {
           <Route path="/industry-portal/dashboard" element={<IndustryDashboardPage />} />
           <Route path="/industry-portal/profile" element={<IndustryProfilePage />} />
           <Route path="/industry-portal/reports" element={<IndustryReportsPage />} />
+          <Route path="/industry-portal/workshops" element={<IndustryWorkshopsPage />} />
         </Route>
 
         {/* Counsellor */}

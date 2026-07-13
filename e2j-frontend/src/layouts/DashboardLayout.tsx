@@ -4,7 +4,7 @@ import {
   Home, LayoutDashboard, Target, BookOpen, Briefcase, MessageCircle, User,
   Settings, LogOut, Bell, Layers, GraduationCap, MapPin, Users, BarChart2,
   FileText, ChevronDown, Menu, X, Trophy, Building2, ClipboardList, Mic,
-  KeyRound, HelpCircle,
+  KeyRound, HelpCircle, CalendarCheck,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { ChangePasswordModal, HelpCenterModal } from '../components/ProfileModals';
@@ -21,6 +21,7 @@ const STUDENT_NAV: NavItem[] = [
   { label: 'Job Listing', icon: Briefcase, to: '/student/jobs' },
   { label: 'Counselli...', icon: MessageCircle, to: '/student/counselling' },
   { label: 'Interview', icon: Mic, to: '/student/interview' },
+  { label: 'Workshops', icon: CalendarCheck, to: '/student/workshops' },
   { label: 'Profile', icon: User, to: '/student/profile' },
 ];
 
@@ -35,6 +36,7 @@ const INSTITUTE_NAV: NavItem[] = [
   },
   { label: 'Student...', icon: GraduationCap, to: '/institute/students' },
   { label: 'Faculty M...', icon: Users, to: '/institute/faculty' },
+  { label: 'Workshops', icon: CalendarCheck, to: '/institute/workshops' },
   { label: 'Book Lab', icon: MapPin, to: '/institute/venues' },
   { label: 'Campus...', icon: Trophy, to: '/institute/recruitment' },
   { label: 'Dashboard', icon: BarChart2, to: '/institute/dashboard' },
@@ -77,12 +79,14 @@ const BREADCRUMB_MAP: Record<string, { parent: string; title: string }> = {
   '/student/courses': { parent: 'Course', title: 'Course' },
   '/student/jobs': { parent: 'Home > Job Listing', title: 'Job' },
   '/student/counselling': { parent: 'Home', title: 'Counselling' },
+  '/student/workshops': { parent: 'Home', title: 'Workshops' },
   '/student/profile-view': { parent: 'Home', title: 'Profile' },
   '/institute': { parent: 'Home', title: 'Home' },
   '/institute/programs': { parent: 'Program Management', title: 'Program Listing' },
   '/institute/curriculum': { parent: 'Program Management', title: 'Curriculum Management' },
   '/institute/students': { parent: 'Home', title: 'Students' },
   '/institute/faculty': { parent: 'Home', title: 'Faculty' },
+  '/institute/workshops': { parent: 'Workshops', title: 'Workshops' },
   '/institute/venues': { parent: 'Home', title: 'Book Lab / Classroom' },
   '/institute/recruitment': { parent: 'Home', title: 'Campus Drive' },
   '/institute/dashboard': { parent: 'Home', title: 'Dashboard Analytics' },

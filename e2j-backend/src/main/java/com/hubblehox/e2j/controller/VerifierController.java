@@ -32,6 +32,7 @@ public class VerifierController {
     private final CurriculumRepository           curriculumRepository;
     private final PsychometricQuestionRepository psychometricQuestionRepository;
     private final PsychometricService            psychometricService;
+    private final com.hubblehox.e2j.service.WorkshopPostingService workshopPostingService;
 
     /** List all industry-partner applications that are pending review */
     @GetMapping("/industry-partners")
@@ -73,6 +74,26 @@ public class VerifierController {
         partner.setApplicationStatus(IndustryPartner.ApplicationStatus.UNDER_REVIEW);
         industryPartnerRepository.save(partner);
         return ResponseEntity.ok(ApiResponse.ok(toStatus(partner), "Marked as under review"));
+    }
+
+    // ── Workshops ────────────────────────────────────────────────────────────
+
+    @GetMapping("/workshops")
+    public ResponseEntity<ApiResponse<List<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>>> listPendingWorkshops() {
+        return ResponseEntity.ok(ApiResponse.ok(workshopPostingService.listPending()));
+    }
+
+    @PutMapping("/workshops/{id}/approve")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>> approveWorkshop(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(workshopPostingService.approve(id), "Workshop approved"));
+    }
+
+    @PutMapping("/workshops/{id}/reject")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>> rejectWorkshop(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                workshopPostingService.reject(id, body.getOrDefault("reason", "")), "Workshop rejected"));
     }
 
     private IndustryPartner findById(Long id) {

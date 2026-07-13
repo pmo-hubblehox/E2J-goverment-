@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/industry-portal/**").hasRole("INDUSTRY_PARTNER")
                         .requestMatchers("/industry/**").hasRole("INDUSTRY_PARTNER")
                         .requestMatchers("/bos/**").hasRole("BOS_MEMBER")
+                        .requestMatchers("/sme/**").hasRole("SME")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

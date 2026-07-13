@@ -22,6 +22,8 @@ public class Faculty {
     @Column(nullable = false)
     private String name;
 
+    private String email;
+
     @ElementCollection
     @CollectionTable(name = "faculty_expertise", joinColumns = @JoinColumn(name = "faculty_id"))
     @Column(name = "expertise")

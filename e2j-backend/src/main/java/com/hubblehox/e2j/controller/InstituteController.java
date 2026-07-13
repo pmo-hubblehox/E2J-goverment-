@@ -48,6 +48,8 @@ public class InstituteController {
     private final InstituteInfraRepository       infraRepo;
     private final InstituteRoomRepository        roomRepo;
     private final InstituteLabRepository         labRepo;
+    private final com.hubblehox.e2j.service.WorkshopPostingService workshopPostingService;
+    private final com.hubblehox.e2j.service.WorkshopEnrollmentService workshopEnrollmentService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -478,6 +480,7 @@ public class InstituteController {
         Faculty f = Faculty.builder()
                 .institute(getInstitute(user))
                 .name((String) body.get("name"))
+                .email((String) body.get("email"))
                 .expertise(toStringList(body.get("expertise")))
                 .days(toStringList(body.get("days")))
                 .mode((String) body.get("mode"))
@@ -497,6 +500,7 @@ public class InstituteController {
                 .filter(fc -> fc.getInstitute().getId().equals(inst.getId()))
                 .orElseThrow(() -> new AppException("Faculty not found", HttpStatus.NOT_FOUND));
         if (body.containsKey("name"))      f.setName((String) body.get("name"));
+        if (body.containsKey("email"))     f.setEmail((String) body.get("email"));
         if (body.containsKey("mode"))      f.setMode((String) body.get("mode"));
         if (body.containsKey("bio"))       f.setBio((String) body.get("bio"));
         if (body.containsKey("expertise")) f.setExpertise(toStringList(body.get("expertise")));
@@ -861,6 +865,56 @@ public class InstituteController {
         }
 
         return ResponseEntity.ok(ApiResponse.ok(b, "BOS member added"));
+    }
+
+    // ── Workshops ────────────────────────────────────────────────────────────
+
+    @GetMapping("/workshops")
+    public ResponseEntity<ApiResponse<List<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>>> listWorkshops(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ApiResponse.ok(workshopPostingService.listForInstitute(getInstitute(user))));
+    }
+
+    /** All approved workshops (regardless of poster) — used so an institute can bulk-enroll students into any live workshop. */
+    @GetMapping("/workshops/browse")
+    public ResponseEntity<ApiResponse<List<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>>> browseApprovedWorkshops() {
+        return ResponseEntity.ok(ApiResponse.ok(workshopPostingService.listApprovedForInstitute()));
+    }
+
+    @GetMapping("/workshops/{id}/enrollments")
+    public ResponseEntity<ApiResponse<List<com.hubblehox.e2j.dto.WorkshopEnrollmentDto.RosterRow>>> workshopEnrollments(
+            @AuthenticationPrincipal User user, @PathVariable Long id) {
+        Institute inst = getInstitute(user);
+        com.hubblehox.e2j.entity.WorkshopPosting workshop = workshopPostingService.findById(id);
+        if (workshop.getInstitute() == null || !workshop.getInstitute().getId().equals(inst.getId()))
+            throw new AppException("Unauthorized", HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(ApiResponse.ok(workshopEnrollmentService.rosterForWorkshop(workshop)));
+    }
+
+    @PostMapping("/workshops")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>> createWorkshop(
+            @AuthenticationPrincipal User user,
+            @RequestBody com.hubblehox.e2j.dto.WorkshopPostingDto.CreateRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                workshopPostingService.createForInstitute(getInstitute(user), req), "Workshop submitted for approval"));
+    }
+
+    @PutMapping("/workshops/{id}")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.WorkshopPostingDto.Response>> updateWorkshop(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody com.hubblehox.e2j.dto.WorkshopPostingDto.CreateRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                workshopPostingService.updateForInstitute(getInstitute(user), id, req), "Workshop updated and resubmitted for approval"));
+    }
+
+    @PostMapping("/workshops/{id}/bulk-enroll")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.WorkshopEnrollmentDto.BulkEnrollResult>> bulkEnrollWorkshop(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id,
+            @RequestBody com.hubblehox.e2j.dto.WorkshopEnrollmentDto.BulkEnrollRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                workshopEnrollmentService.bulkEnroll(getInstitute(user), id, req.getInstituteStudentIds()), "Bulk enrollment processed"));
     }
 
     @PutMapping("/bos-members/{id}")
