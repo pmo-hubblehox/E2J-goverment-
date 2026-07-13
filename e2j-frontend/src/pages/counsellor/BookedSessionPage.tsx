@@ -71,12 +71,13 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
   const [newResUrl, setNewResUrl]   = useState('');
   const [comment, setComment]     = useState(pr?.counsellorComment ?? '');
   const [saving, setSaving]       = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const LIKERT_OPTS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
   const STAR_LABELS = ['', 'Poor', 'Below Average', 'Average', 'Good', 'Excellent'];
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaving(true); setSaveError('');
     try {
       await api.post(`/counsellor/bookings/${booking.id}/report-comment`, {
         comment, keyObservations: keyObs,
@@ -86,7 +87,9 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
         studentEmail: booking.studentEmail, studentName: booking.studentName,
       });
       onClose();
-    } catch { /* ignore */ } finally { setSaving(false); }
+    } catch (e: any) {
+      setSaveError(e?.response?.data?.message ?? 'Failed to save report.');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -273,6 +276,9 @@ function ReportModal({ booking, onClose }: { booking: StudentBooking; onClose: (
                 </div>
               </div>
 
+              {saveError && (
+                <div style={{ marginBottom: '10px', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '8px', color: '#B91C1C', fontSize: '13px' }}>{saveError}</div>
+              )}
               {!alreadySaved && (
                 <button onClick={handleSave} disabled={saving || !keyObs}
                   style={{ width: '100%', padding: '14px', background: saving ? '#A5B4FC' : PRIMARY, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
@@ -555,6 +561,7 @@ export default function BookedSessionPage() {
   const [sessions, setSessions] = useState<AvailSession[]>([]);
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [completingId, setCompletingId] = useState<number | null>(null);
 
   const loadSessions = useCallback(() => {
     api.get('/counsellor/sessions')
@@ -575,6 +582,12 @@ export default function BookedSessionPage() {
 
   const reload = useCallback(() => { loadSessions(); loadBookings(); }, [loadSessions, loadBookings]);
   useEffect(() => { reload(); }, [reload]);
+
+  const handleMarkComplete = async (id: number) => {
+    setCompletingId(id);
+    try { await api.put(`/counsellor/bookings/${id}/complete`); loadBookings(); }
+    catch { /* ignore */ } finally { setCompletingId(null); }
+  };
 
   // ── Calendar event expansion ─────────────────────────────────────────────
   const calendarEvents = (() => {
@@ -671,9 +684,16 @@ export default function BookedSessionPage() {
                     </td>
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {b.status === 'CONFIRMED' && (
+                          <button onClick={() => handleMarkComplete(b.id)} disabled={completingId === b.id}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#DCFCE7', border: 'none', borderRadius: '6px', color: '#16A34A', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: completingId === b.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: completingId === b.id ? 0.6 : 1 }}>
+                            {completingId === b.id ? 'Marking…' : 'Mark Complete'}
+                          </button>
+                        )}
                         {(b.psychometricReport || (b.questionnaire && Object.values(b.questionnaire).some(v => v))) && (
-                          <button onClick={() => setViewingReport(b)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#EEF2FF', border: 'none', borderRadius: '6px', color: '#3F41D1', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <button onClick={() => setViewingReport(b)} disabled={b.status !== 'COMPLETED'}
+                            title={b.status !== 'COMPLETED' ? 'Mark the session completed first' : undefined}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: b.status === 'COMPLETED' ? '#EEF2FF' : '#F1F5F9', border: 'none', borderRadius: '6px', color: b.status === 'COMPLETED' ? '#3F41D1' : '#94A3B8', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: b.status === 'COMPLETED' ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
                             <FileText size={11} /> Report
                           </button>
                         )}

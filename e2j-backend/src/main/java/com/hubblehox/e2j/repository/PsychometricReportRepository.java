@@ -12,4 +12,7 @@ public interface PsychometricReportRepository extends JpaRepository<Psychometric
     List<PsychometricReport> findByStudentOrderByCreatedAtDesc(Student student);
 
     Optional<PsychometricReport> findTopByStudentOrderByCreatedAtDesc(Student student);
+
+    /** Latest report that actually has real psychometric test scores (as opposed to a comment-only shell created for a booking). */
+    Optional<PsychometricReport> findFirstByStudentAndScoresJsonIsNotNullOrderByCreatedAtDesc(Student student);
 }

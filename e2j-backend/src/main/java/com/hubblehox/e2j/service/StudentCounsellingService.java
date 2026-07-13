@@ -28,6 +28,7 @@ public class StudentCounsellingService {
     private final CounsellorWorkExperienceRepository workExpRepo;
     private final CounsellorCertificationRepository certRepo;
     private final com.hubblehox.e2j.repository.CounsellorReviewRepository reviewRepo;
+    private final PsychometricReportRepository psychometricReportRepo;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter LABEL_FMT = DateTimeFormatter.ofPattern("dd MMM").withLocale(Locale.ENGLISH);
@@ -171,8 +172,25 @@ public class StudentCounsellingService {
                 .feeAmount(req.getFeeAmount())
                 .meetLink(meetLink)
                 .status(StudentBooking.Status.CONFIRMED)
-                .psychometricReportId(req.getPsychometricReportId())
                 .build();
+        booking = bookingRepo.save(booking);
+
+        // Every booking gets its own report row so multiple sessions (even with the same counsellor)
+        // never share one report — copy the student's actual psychometric test scores for context,
+        // but leave the counsellor-feedback fields blank for this specific session.
+        PsychometricReport sourceReport = psychometricReportRepo
+                .findFirstByStudentAndScoresJsonIsNotNullOrderByCreatedAtDesc(student).orElse(null);
+        PsychometricReport bookingReport = PsychometricReport.builder()
+                .student(student)
+                .aspirationId(sourceReport != null ? sourceReport.getAspirationId() : null)
+                .scoresJson(sourceReport != null ? sourceReport.getScoresJson() : null)
+                .recommendedPathsJson(sourceReport != null ? sourceReport.getRecommendedPathsJson() : null)
+                .topInterests(sourceReport != null ? sourceReport.getTopInterests() : null)
+                .topCareerMatch(sourceReport != null ? sourceReport.getTopCareerMatch() : null)
+                .totalScore(sourceReport != null ? sourceReport.getTotalScore() : null)
+                .build();
+        bookingReport = psychometricReportRepo.save(bookingReport);
+        booking.setPsychometricReportId(bookingReport.getId());
         booking = bookingRepo.save(booking);
 
         return toDetail(booking);
@@ -240,7 +258,7 @@ public class StudentCounsellingService {
     }
 
     private StudentCounsellingDto.BookingDetail toDetail(StudentBooking b) {
-        return StudentCounsellingDto.BookingDetail.builder()
+        StudentCounsellingDto.BookingDetail.BookingDetailBuilder builder = StudentCounsellingDto.BookingDetail.builder()
                 .id(b.getId())
                 .counsellorId(b.getCounsellor().getId())
                 .counsellorName(b.getCounsellor().getUser().getName())
@@ -252,8 +270,25 @@ public class StudentCounsellingService {
                 .status(b.getStatus().name())
                 .meetLink(b.getMeetLink())
                 .createdAt(b.getCreatedAt())
-                .hasFeedback(reviewRepo.findByBooking(b).isPresent())
-                .build();
+                .hasFeedback(reviewRepo.findByBooking(b).isPresent());
+
+        if (b.getStatus() == StudentBooking.Status.COMPLETED && b.getPsychometricReportId() != null) {
+            psychometricReportRepo.findById(b.getPsychometricReportId()).ifPresent(report -> {
+                boolean shared = report.getCounsellorComment() != null || report.getFeedbackKeyObservations() != null
+                        || report.getFeedbackActionItems() != null || report.getFeedbackResourcesRecommended() != null;
+                if (shared) {
+                    builder.counsellorReportShared(true)
+                            .counsellorReportName(report.getCounsellorName())
+                            .counsellorComment(report.getCounsellorComment())
+                            .feedbackKeyObservations(report.getFeedbackKeyObservations())
+                            .feedbackActionItems(report.getFeedbackActionItems())
+                            .feedbackResourcesRecommended(report.getFeedbackResourcesRecommended())
+                            .counsellorReportSharedAt(report.getCommentedAt());
+                }
+            });
+        }
+
+        return builder.build();
     }
 
     private LocalDate parseDate(String s, LocalDate fallback) {

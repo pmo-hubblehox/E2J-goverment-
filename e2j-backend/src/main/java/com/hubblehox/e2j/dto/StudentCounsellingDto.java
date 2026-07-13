@@ -96,5 +96,13 @@ public class StudentCounsellingDto {
         private String meetLink;
         private LocalDateTime createdAt;
         private boolean hasFeedback;
+        // Counsellor's report/feedback shared for THIS specific session (only populated once the session is marked completed and the counsellor has shared a report)
+        private boolean counsellorReportShared;
+        private String counsellorReportName;
+        private String counsellorComment;
+        private String feedbackKeyObservations;
+        private String feedbackActionItems;
+        private String feedbackResourcesRecommended;
+        private LocalDateTime counsellorReportSharedAt;
     }
 }

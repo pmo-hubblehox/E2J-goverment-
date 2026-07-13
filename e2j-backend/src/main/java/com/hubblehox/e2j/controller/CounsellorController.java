@@ -365,10 +365,11 @@ public class CounsellorController {
                         qa.put("What Challenges Are You Currently Facing In Your Career Journey?", b.getQ5Challenges());
                         m.put("questionnaire", qa);
                     }
-                    // Attach latest psychometric report for this student if available
-                    psychometricReportRepo
-                        .findTopByStudentOrderByCreatedAtDesc(b.getStudent())
-                        .ifPresent(r -> m.put("psychometricReport", psychometricService.reportToMap(r)));
+                    // Attach the report linked to THIS specific booking, not just any report for the student
+                    if (b.getPsychometricReportId() != null) {
+                        psychometricReportRepo.findById(b.getPsychometricReportId())
+                            .ifPresent(r -> m.put("psychometricReport", psychometricService.reportToMap(r)));
+                    }
                     return m;
                 }).toList();
         return ResponseEntity.ok(ApiResponse.ok(result));
@@ -397,6 +398,22 @@ public class CounsellorController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Deleted"));
     }
 
+    // ── Mark session completed ───────────────────────────────────────────────
+
+    @PutMapping("/bookings/{id}/complete")
+    public ResponseEntity<ApiResponse<Map<String, String>>> markBookingCompleted(
+            @AuthenticationPrincipal User user, @PathVariable Long id) {
+        Counsellor c = get(user);
+        StudentBooking booking = bookingRepo.findById(id)
+                .filter(b -> b.getCounsellor().getId().equals(c.getId()))
+                .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
+        if (booking.getStatus() != StudentBooking.Status.CONFIRMED)
+            throw new AppException("Only a confirmed session can be marked completed", HttpStatus.CONFLICT);
+        booking.setStatus(StudentBooking.Status.COMPLETED);
+        bookingRepo.save(booking);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("status", booking.getStatus().name()), "Session marked completed"));
+    }
+
     // ── Report comment + email ────────────────────────────────────────────────
 
     @PostMapping("/bookings/{id}/report-comment")
@@ -409,6 +426,8 @@ public class CounsellorController {
         StudentBooking booking = bookingRepo.findById(id)
                 .filter(b -> b.getCounsellor().getId().equals(c.getId()))
                 .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
+        if (booking.getStatus() != StudentBooking.Status.COMPLETED)
+            throw new AppException("Mark the session as completed before sharing a report", HttpStatus.CONFLICT);
 
         String comment               = body.getOrDefault("comment", "").toString().strip();
         String keyObservations       = body.getOrDefault("keyObservations", "").toString().strip();

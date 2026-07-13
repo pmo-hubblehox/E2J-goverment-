@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Search, Star, ChevronLeft, Clock, Calendar, CheckCircle, Loader2, Video, Briefcase, GraduationCap, Award, ExternalLink, MapPin, ChevronRight, MoreVertical, FileText, MessageSquare } from 'lucide-react';
 import api from '../../services/api';
 
@@ -52,6 +51,13 @@ interface BookingDetail {
   meetLink: string;
   createdAt: string;
   hasFeedback: boolean;
+  counsellorReportShared: boolean;
+  counsellorReportName: string | null;
+  counsellorComment: string | null;
+  feedbackKeyObservations: string | null;
+  feedbackActionItems: string | null;
+  feedbackResourcesRecommended: string | null;
+  counsellorReportSharedAt: string | null;
 }
 
 type View = 'browse' | 'profile' | 'payment' | 'confirmed' | 'my-bookings';
@@ -66,7 +72,6 @@ const GRADIENTS = [
 ];
 
 export default function CounsellingPage() {
-  const navigate = useNavigate();
   const [view, setView] = useState<View>('browse');
   const [search, setSearch] = useState('');
 
@@ -122,6 +127,7 @@ export default function CounsellingPage() {
   const [fbComment, setFbComment] = useState('');
   const [fbSaving, setFbSaving] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<number | null>(null);
+  const [feedbackReportTarget, setFeedbackReportTarget] = useState<BookingDetail | null>(null);
 
   const [myBookings, setMyBookings]     = useState<BookingDetail[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -991,6 +997,9 @@ export default function CounsellingPage() {
           }}
         />
       )}
+      {feedbackReportTarget && (
+        <CounsellorReportModal booking={feedbackReportTarget} onClose={() => setFeedbackReportTarget(null)} />
+      )}
       <div style={{ padding: '24px', minHeight: '100%', background: BG }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
@@ -1082,7 +1091,7 @@ export default function CounsellingPage() {
                         <div style={{ position: 'absolute', right: 0, top: '28px', zIndex: 11, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '180px', overflow: 'hidden', textAlign: 'left' }}>
                           {b.status === 'COMPLETED' ? (
                             <>
-                              <button onClick={() => { setActionMenuOpen(null); navigate('/student/aspiration'); }}
+                              <button onClick={() => { setActionMenuOpen(null); setFeedbackReportTarget(b); }}
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left' }}>
                                 <FileText size={14} color={PRIMARY} /> View Report
                               </button>
@@ -1273,6 +1282,81 @@ function FeedbackModal({ booking, onClose, onSaved }: { booking: BookingDetail; 
           </button>
           {Object.values(ratings).some(v => v === 0) && (
             <p style={{ textAlign: 'center', fontSize: '12px', color: SUB, margin: '8px 0 0' }}>Please rate all 4 questions to submit</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Counsellor Report Modal (feedback shared by counsellor for this session) ──
+function CounsellorReportModal({ booking, onClose }: { booking: BookingDetail; onClose: () => void }) {
+  const PRIMARY = '#4F46E5', TEXT = '#1E293B', SUB = '#64748B', BORDER = '#E2E8F0';
+
+  let actionItems: { text: string }[] = [];
+  try { actionItems = booking.feedbackActionItems ? JSON.parse(booking.feedbackActionItems) : []; } catch { actionItems = []; }
+  let resources: { title: string; url: string }[] = [];
+  try { resources = booking.feedbackResourcesRecommended ? JSON.parse(booking.feedbackResourcesRecommended) : []; } catch { resources = []; }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ background: '#fff', borderRadius: '18px', width: '100%', maxWidth: '560px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
+        <div style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #7C3AED 100%)`, padding: '22px 24px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: 700 }}>Counsellor Feedback</div>
+            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '3px' }}>
+              {booking.counsellorName} · {booking.sessionDate}
+              {booking.counsellorReportSharedAt ? ` · Shared ${new Date(booking.counsellorReportSharedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '6px 10px', color: '#fff', cursor: 'pointer', fontSize: '16px' }}>×</button>
+        </div>
+
+        <div style={{ padding: '24px', overflowY: 'auto' }}>
+          {!booking.counsellorReportShared ? (
+            <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', padding: '24px 0' }}>
+              Your counsellor hasn't shared a report for this session yet.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {booking.counsellorComment && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Review</div>
+                  <p style={{ fontSize: '13px', color: TEXT, lineHeight: 1.8, margin: 0 }}>{booking.counsellorComment}</p>
+                </div>
+              )}
+              {booking.feedbackKeyObservations && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Key Observations</div>
+                  <p style={{ fontSize: '13px', color: TEXT, lineHeight: 1.8, margin: 0 }}>{booking.feedbackKeyObservations}</p>
+                </div>
+              )}
+              {actionItems.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Action Items</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {actionItems.map((a, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#EEF2FF', color: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, flexShrink: 0, marginTop: '1px' }}>{i + 1}</span>
+                        <span style={{ fontSize: '13px', color: TEXT, lineHeight: 1.5 }}>{a.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {resources.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: SUB, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Recommended Resources</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {resources.map((r, i) => (
+                      <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: PRIMARY, textDecoration: 'none' }}>
+                        {r.title || r.url}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
