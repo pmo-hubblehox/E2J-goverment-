@@ -69,6 +69,7 @@ const NAV_MAP: Record<UserRole, NavItem[]> = {
   HEAD_COUNSELLOR: [],
   INDUSTRY_PARTNER: INDUSTRY_PARTNER_NAV,
   BOS_MEMBER: [],
+  SME: [],
 };
 
 const BREADCRUMB_MAP: Record<string, { parent: string; title: string }> = {

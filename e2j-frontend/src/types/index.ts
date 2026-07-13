@@ -1,4 +1,4 @@
-export type UserRole = 'STUDENT' | 'INSTITUTE' | 'VERIFIER' | 'COUNSELLOR' | 'HEAD_COUNSELLOR' | 'INDUSTRY_PARTNER' | 'BOS_MEMBER';
+export type UserRole = 'STUDENT' | 'INSTITUTE' | 'VERIFIER' | 'COUNSELLOR' | 'HEAD_COUNSELLOR' | 'INDUSTRY_PARTNER' | 'BOS_MEMBER' | 'SME';
 
 export interface AuthUser {
   id: number;
