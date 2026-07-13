@@ -155,16 +155,21 @@ public class WorkshopPostingService {
                 .map(this::toResponse).toList();
     }
 
-    public List<WorkshopPostingDto.Response> browseForStudent(String email, String mode, String scope) {
+    public List<WorkshopPostingDto.Response> browseForStudent(String email, String mode, String scope, String role) {
         Student student = getStudent(email);
         boolean recommendedOnly = "recommended".equalsIgnoreCase(scope);
 
-        List<String> targetRoles = recommendedOnly
-                ? aspirationRepo.findByStudentOrderByCreatedAtDesc(student).stream()
+        List<String> targetRoles;
+        if (role != null && !role.isBlank()) {
+            targetRoles = List.of(role);
+        } else if (recommendedOnly) {
+            targetRoles = aspirationRepo.findByStudentOrderByCreatedAtDesc(student).stream()
                     .map(StudentAspiration::getRoleArea)
                     .filter(r -> r != null && !r.isBlank())
-                    .toList()
-                : List.of();
+                    .toList();
+        } else {
+            targetRoles = List.of();
+        }
 
         List<WorkshopPosting> matches = workshopRepo.findByStatusOrderByCreatedAtDesc(WorkshopPosting.Status.APPROVED)
                 .stream()

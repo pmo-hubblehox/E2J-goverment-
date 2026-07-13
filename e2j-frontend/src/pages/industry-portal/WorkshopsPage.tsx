@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, X, Users } from 'lucide-react';
 import api from '../../services/api';
+import { ROLE_AREAS } from '../../constants/roleAreas';
 
 const PRIMARY = '#3F41D1';
 const BORDER = '#E2E8F0';
@@ -220,7 +221,12 @@ export default function WorkshopsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <Field label="Title"><input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} /></Field>
               <Field label="Description"><textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical' as const }} /></Field>
-              <Field label="Target Role"><input value={targetRole} onChange={e => setTargetRole(e.target.value)} placeholder="Data Analyst" style={inputStyle} /></Field>
+              <Field label="Target Role">
+                <select value={targetRole} onChange={e => setTargetRole(e.target.value)} style={inputStyle}>
+                  <option value="">Select a role</option>
+                  {ROLE_AREAS.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
               <Field label="Trainer (from SME Listing)">
                 <select value={industrySmeId} onChange={e => setIndustrySmeId(e.target.value)} style={inputStyle}>
                   <option value="">No trainer</option>

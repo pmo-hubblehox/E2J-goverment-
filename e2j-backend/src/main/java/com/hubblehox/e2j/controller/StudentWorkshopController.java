@@ -27,8 +27,9 @@ public class StudentWorkshopController {
     public ResponseEntity<ApiResponse<List<WorkshopPostingDto.Response>>> browse(
             @AuthenticationPrincipal UserDetails ud,
             @RequestParam(required = false) String mode,
-            @RequestParam(required = false) String scope) {
-        return ResponseEntity.ok(ApiResponse.ok(workshopService.browseForStudent(ud.getUsername(), mode, scope)));
+            @RequestParam(required = false) String scope,
+            @RequestParam(required = false) String role) {
+        return ResponseEntity.ok(ApiResponse.ok(workshopService.browseForStudent(ud.getUsername(), mode, scope, role)));
     }
 
     @GetMapping("/student/workshops/{id}")

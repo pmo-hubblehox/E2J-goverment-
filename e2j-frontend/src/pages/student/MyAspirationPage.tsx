@@ -3,6 +3,7 @@ import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Load
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import { ROLE_AREAS } from '../../constants/roleAreas';
 
 const PRIMARY = '#3F41D1';
 const BORDER  = '#E2E8F0';
@@ -30,15 +31,6 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; bar: string }>
 
 interface Aspiration { id: number; goal: string; roleArea: string; skills: string[]; createdAt: string; }
 interface SkillGapReport { id: number; targetRole: string; curriculum: string; generatedAt: string; }
-
-const ROLE_AREAS = [
-  'Frontend Developer', 'Backend Developer', 'Fullstack Developer', 'Data Analyst',
-  'AI/ML Engineer', 'Software Tester/QA Engineer', 'Cybersecurity Analyst', 'Cloud Engineer',
-  'UI/UX Designer', 'Mobile App Developer', 'Game Developer', 'Blockchain Developer',
-  'Embedded Systems Engineer', 'Database Administrator', 'Business Analyst',
-  'Technical Support Engineer', 'Automation Engineer', 'IT Systems Administrator',
-  'Cloud Support Associate', 'Software Engineer', 'Data Scientist', 'DevOps Engineer',
-];
 
 const STEP_LABELS         = ['Your Goal', 'Your Profile', 'Role'];
 const EXPLORE_STEP_LABELS = ['Your Goal', 'Payment', 'Psychometric Test', 'Your Report'];
@@ -73,6 +65,40 @@ function StepIndicator({ current, labels }: { current: number; labels?: string[]
 
 const GOAL_LABEL: Record<string, string> = { career: 'Career Path', skills: 'Skill Growth', explore: 'Exploration' };
 
+function RecommendedWorkshops({ loading, workshops, navigate }: { loading: boolean; workshops: any[]; navigate: (path: string) => void }) {
+  if (loading || workshops.length === 0) return null;
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '22px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div>
+          <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 700, color: TEXT }}>Recommended Workshops</h4>
+          <p style={{ margin: 0, fontSize: '12px', color: SUB }}>Workshops matching your career interests</p>
+        </div>
+        <button onClick={() => navigate('/student/workshops')}
+          style={{ padding: '7px 16px', borderRadius: '100px', border: `1.5px solid ${PRIMARY}`, background: '#fff', color: PRIMARY, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+          View All
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {workshops.map(w => (
+          <div key={w.id} onClick={() => navigate('/student/workshops')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: `1px solid ${BORDER}`, borderRadius: '10px', background: '#FAFBFF', cursor: 'pointer' }}>
+            <div>
+              <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{w.title}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: SUB }}>
+                {w.targetRole} · {w.mode === 'ONLINE' ? 'Online' : `${w.city}, ${w.state}`} · {w.sessionDate}
+              </p>
+            </div>
+            <span style={{ padding: '4px 12px', borderRadius: '100px', background: '#EEF2FF', color: PRIMARY, fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
+              {w.feeAmount ? `₹${w.feeAmount.toLocaleString()}` : 'Free'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function MyAspirationPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
@@ -89,6 +115,8 @@ export default function MyAspirationPage() {
   const [detailPsychReport, setDetailPsychReport] = useState<any>(null);
   const [detailPsychLoading, setDetailPsychLoading] = useState(false);
   const [analysisRunning, setAnalysisRunning] = useState(false);
+  const [recommendedWorkshops, setRecommendedWorkshops] = useState<any[]>([]);
+  const [workshopsLoading, setWorkshopsLoading] = useState(false);
 
   // background task toast + aspiration saved toast
   const [bgToast, setBgToast]           = useState<{ msg: string; targetRole: string } | null>(null);
@@ -199,6 +227,15 @@ export default function MyAspirationPage() {
 
   const openDetail = (asp: Aspiration) => {
     setSelected(asp); setSkillGapReports([]); setDetailPsychReport(null); setView('detail');
+    if (asp.roleArea && asp.roleArea !== 'Exploring Interests') {
+      setWorkshopsLoading(true);
+      api.get('/student/workshops', { params: { role: asp.roleArea } })
+        .then(r => setRecommendedWorkshops((r.data?.data ?? []).slice(0, 3)))
+        .catch(() => setRecommendedWorkshops([]))
+        .finally(() => setWorkshopsLoading(false));
+    } else {
+      setRecommendedWorkshops([]);
+    }
     // Check if a skill gap analysis is still running for this aspiration
     try {
       const stored = localStorage.getItem('skillgap_running_task');
@@ -1341,7 +1378,13 @@ export default function MyAspirationPage() {
               </div>
             )}
           </div>
-        ) : (
+        ) : null}
+
+        {view === 'detail' && selected && (
+          <RecommendedWorkshops loading={workshopsLoading} workshops={recommendedWorkshops} navigate={navigate} />
+        )}
+
+        {selected?.goal !== 'explore' && (
           <>
             {/* Analysis running banner */}
             {analysisRunning && (
