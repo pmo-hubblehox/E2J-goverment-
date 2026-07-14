@@ -2,6 +2,8 @@ package com.hubblehox.e2j.dto;
 
 import lombok.*;
 
+import java.util.Map;
+
 public class WorkshopReviewDto {
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
@@ -10,6 +12,7 @@ public class WorkshopReviewDto {
         private Integer venueRating;
         private Integer overallRating;
         private String comment;
+        private Map<String, String> answers;
     }
 
     @Getter @Setter @Builder
@@ -21,6 +24,7 @@ public class WorkshopReviewDto {
         private Integer venueRating;
         private Integer overallRating;
         private String comment;
+        private Map<String, String> answers;
         private String createdAt;
     }
 }

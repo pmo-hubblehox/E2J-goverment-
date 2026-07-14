@@ -50,6 +50,7 @@ public class InstituteController {
     private final InstituteLabRepository         labRepo;
     private final com.hubblehox.e2j.service.WorkshopPostingService workshopPostingService;
     private final com.hubblehox.e2j.service.WorkshopEnrollmentService workshopEnrollmentService;
+    private final com.hubblehox.e2j.service.WorkshopReviewService workshopReviewService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -889,6 +890,16 @@ public class InstituteController {
         if (workshop.getInstitute() == null || !workshop.getInstitute().getId().equals(inst.getId()))
             throw new AppException("Unauthorized", HttpStatus.FORBIDDEN);
         return ResponseEntity.ok(ApiResponse.ok(workshopEnrollmentService.rosterForWorkshop(workshop)));
+    }
+
+    @GetMapping("/workshops/{id}/reviews")
+    public ResponseEntity<ApiResponse<List<com.hubblehox.e2j.dto.WorkshopReviewDto.Response>>> workshopReviews(
+            @AuthenticationPrincipal User user, @PathVariable Long id) {
+        Institute inst = getInstitute(user);
+        com.hubblehox.e2j.entity.WorkshopPosting workshop = workshopPostingService.findById(id);
+        if (workshop.getInstitute() == null || !workshop.getInstitute().getId().equals(inst.getId()))
+            throw new AppException("Unauthorized", HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(ApiResponse.ok(workshopReviewService.forWorkshop(id)));
     }
 
     @PostMapping("/workshops")

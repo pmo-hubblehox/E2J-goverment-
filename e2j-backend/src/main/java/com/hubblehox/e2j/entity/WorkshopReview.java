@@ -25,6 +25,10 @@ public class WorkshopReview {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
+    /** Answers to the fixed feedback questions: {"trainerClarity":"Agree","trainerEngagement":"Strongly Agree","venueComfort":"Neutral","wouldRecommend":"Agree"} */
+    @Column(columnDefinition = "TEXT")
+    private String answersJson;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

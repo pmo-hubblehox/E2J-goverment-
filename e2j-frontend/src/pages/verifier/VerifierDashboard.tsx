@@ -1003,7 +1003,7 @@ export default function VerifierDashboard() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{w.title}</div>
-                      <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{w.posterName} · {w.targetRole} · {w.trainerName ?? 'No trainer assigned'}</div>
+                      <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{w.posterName} · {(w.targetRoles ?? []).join(', ')} · {w.trainerName ?? 'No trainer assigned'}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: SUB, flexWrap: 'wrap', marginBottom: '12px' }}>

@@ -43,7 +43,8 @@ public class WorkshopEnrollmentService {
         WorkshopPosting workshop = getWorkshop(workshopId);
         if (workshop.getStatus() != WorkshopPosting.Status.APPROVED)
             throw new AppException("Workshop is not open for enrollment", HttpStatus.CONFLICT);
-        if (enrollmentRepo.findByWorkshopAndStudent(workshop, student).isPresent())
+        WorkshopEnrollment existing = enrollmentRepo.findByWorkshopAndStudent(workshop, student).orElse(null);
+        if (existing != null && existing.getStatus() != WorkshopEnrollment.Status.CANCELLED)
             throw new AppException("Already enrolled in this workshop", HttpStatus.CONFLICT);
 
         WorkshopEnrollment enrollment = place(workshop, student, null, formAnswer);
@@ -51,24 +52,27 @@ public class WorkshopEnrollmentService {
         return toResponse(enrollment);
     }
 
+    /** Creates a new enrollment, or reactivates the student's previously cancelled one (unique constraint on workshop+student forbids a second row). */
     private WorkshopEnrollment place(WorkshopPosting workshop, Student student, Institute enrolledByInstitute, String formAnswer) {
+        WorkshopEnrollment existing = enrollmentRepo.findByWorkshopAndStudent(workshop, student).orElse(null);
         long confirmedCount = enrollmentRepo.countByWorkshopAndStatus(workshop, WorkshopEnrollment.Status.CONFIRMED);
         boolean hasSeat = workshop.getTotalSeats() != null && confirmedCount < workshop.getTotalSeats();
 
-        WorkshopEnrollment.WorkshopEnrollmentBuilder builder = WorkshopEnrollment.builder()
-                .workshop(workshop)
-                .student(student)
-                .enrolledByInstitute(enrolledByInstitute)
-                .formAnswer(formAnswer)
-                .feeAmount(workshop.getFeeAmount());
+        WorkshopEnrollment enrollment = existing != null ? existing
+                : WorkshopEnrollment.builder().workshop(workshop).student(student).build();
+        enrollment.setEnrolledByInstitute(enrolledByInstitute);
+        enrollment.setFormAnswer(formAnswer);
+        enrollment.setFeeAmount(workshop.getFeeAmount());
 
         if (hasSeat) {
-            builder.status(WorkshopEnrollment.Status.CONFIRMED);
+            enrollment.setStatus(WorkshopEnrollment.Status.CONFIRMED);
+            enrollment.setWaitlistPosition(null);
         } else {
             long waitlistCount = enrollmentRepo.countByWorkshopAndStatus(workshop, WorkshopEnrollment.Status.WAITLISTED);
-            builder.status(WorkshopEnrollment.Status.WAITLISTED).waitlistPosition((int) waitlistCount + 1);
+            enrollment.setStatus(WorkshopEnrollment.Status.WAITLISTED);
+            enrollment.setWaitlistPosition((int) waitlistCount + 1);
         }
-        return enrollmentRepo.save(builder.build());
+        return enrollmentRepo.save(enrollment);
     }
 
     public List<WorkshopEnrollmentDto.Response> myEnrollments(String email) {
@@ -136,7 +140,8 @@ public class WorkshopEnrollmentService {
             if (is.getEmail() == null || is.getEmail().isBlank()) { skipped++; continue; }
             Student student = studentRepo.findByUser_Email(is.getEmail()).orElse(null);
             if (student == null) { skipped++; continue; }
-            if (enrollmentRepo.findByWorkshopAndStudent(workshop, student).isPresent()) { skipped++; continue; }
+            WorkshopEnrollment existing = enrollmentRepo.findByWorkshopAndStudent(workshop, student).orElse(null);
+            if (existing != null && existing.getStatus() != WorkshopEnrollment.Status.CANCELLED) { skipped++; continue; }
 
             WorkshopEnrollment enrollment = place(workshop, student, institute, null);
             notifyStudent(enrollment);
@@ -185,9 +190,11 @@ public class WorkshopEnrollmentService {
                 .workshopTitle(w.getTitle())
                 .mode(w.getMode() != null ? w.getMode().name() : null)
                 .sessionDate(w.getSessionDate())
+                .sessionEndDate(w.getSessionEndDate())
                 .sessionTime(w.getSessionTime())
                 .meetingLink(w.getMeetingLink())
                 .venueAddress(w.getVenueAddress())
+                .venueMapUrl(w.getVenueMapUrl())
                 .status(e.getStatus().name())
                 .waitlistPosition(e.getWaitlistPosition())
                 .feeAmount(e.getFeeAmount())

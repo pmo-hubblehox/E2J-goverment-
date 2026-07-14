@@ -23,9 +23,11 @@ public class WorkshopEnrollmentDto {
         private String workshopTitle;
         private String mode;
         private String sessionDate;
+        private String sessionEndDate;
         private String sessionTime;
         private String meetingLink;
         private String venueAddress;
+        private String venueMapUrl;
         private String status;
         private Integer waitlistPosition;
         private Double feeAmount;

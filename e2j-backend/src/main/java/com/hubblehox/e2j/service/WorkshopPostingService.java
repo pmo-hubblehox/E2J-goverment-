@@ -95,13 +95,14 @@ public class WorkshopPostingService {
         w.setTrainer(trainer);
         w.setTitle(req.getTitle());
         w.setDescription(req.getDescription());
-        w.setTargetRole(req.getTargetRole());
+        w.setTargetRoles(req.getTargetRoles() != null ? req.getTargetRoles() : List.of());
         w.setMode(mode);
         w.setSessionDate(req.getSessionDate());
+        w.setSessionEndDate(req.getSessionEndDate());
         w.setSessionTime(req.getSessionTime());
-        w.setDurationMinutes(req.getDurationMinutes());
         w.setFeeAmount(req.getFeeAmount());
         w.setTotalSeats(req.getTotalSeats());
+        w.setPrerequisite(req.getPrerequisite());
         w.setCustomQuestion(req.getCustomQuestion());
         w.setStatus(WorkshopPosting.Status.PENDING);
         w.setRejectionReason(null);
@@ -110,11 +111,13 @@ public class WorkshopPostingService {
             w.setCity(req.getCity());
             w.setState(req.getState());
             w.setVenueAddress(req.getVenueAddress());
+            w.setVenueMapUrl(req.getVenueMapUrl());
             w.setMeetingLink(null);
         } else {
             w.setCity(null);
             w.setState(null);
             w.setVenueAddress(null);
+            w.setVenueMapUrl(null);
             if (w.getMeetingLink() == null)
                 w.setMeetingLink("https://meet.google.com/" + UUID.randomUUID().toString().substring(0, 10));
         }
@@ -173,7 +176,7 @@ public class WorkshopPostingService {
 
         List<WorkshopPosting> matches = workshopRepo.findByStatusOrderByCreatedAtDesc(WorkshopPosting.Status.APPROVED)
                 .stream()
-                .filter(w -> targetRoles.isEmpty() || targetRoles.stream().anyMatch(r -> roleMatches(r, w.getTargetRole())))
+                .filter(w -> targetRoles.isEmpty() || targetRoles.stream().anyMatch(r -> w.getTargetRoles().stream().anyMatch(wr -> roleMatches(r, wr))))
                 .filter(w -> mode == null || mode.isBlank() || w.getMode().name().equalsIgnoreCase(mode))
                 .toList();
 
@@ -234,14 +237,16 @@ public class WorkshopPostingService {
                 .trainerName(w.getTrainer() != null ? w.getTrainer().getName() : null)
                 .title(w.getTitle())
                 .description(w.getDescription())
-                .targetRole(w.getTargetRole())
+                .targetRoles(w.getTargetRoles())
                 .mode(w.getMode() != null ? w.getMode().name() : null)
                 .sessionDate(w.getSessionDate())
+                .sessionEndDate(w.getSessionEndDate())
                 .sessionTime(w.getSessionTime())
                 .durationMinutes(w.getDurationMinutes())
                 .city(w.getCity())
                 .state(w.getState())
                 .venueAddress(w.getVenueAddress())
+                .venueMapUrl(w.getVenueMapUrl())
                 .meetingLink(w.getMeetingLink())
                 .feeAmount(w.getFeeAmount())
                 .totalSeats(w.getTotalSeats())
@@ -250,6 +255,7 @@ public class WorkshopPostingService {
                 .rejectionReason(w.getRejectionReason())
                 .rating(w.getRating())
                 .createdAt(w.getCreatedAt() != null ? w.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
+                .prerequisite(w.getPrerequisite())
                 .customQuestion(w.getCustomQuestion())
                 .industrySmeId(w.getTrainer() != null ? w.getTrainer().getIndustrySmeId() : null)
                 .facultyId(w.getTrainer() != null ? w.getTrainer().getFacultyId() : null)

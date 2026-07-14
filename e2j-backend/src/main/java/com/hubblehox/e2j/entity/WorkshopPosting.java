@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "workshop_postings")
@@ -31,7 +33,13 @@ public class WorkshopPosting {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private String targetRole;
+    @ElementCollection
+    @Builder.Default
+    private List<String> targetRoles = new ArrayList<>();
+
+    /** Optional prerequisite note shown to students before they enroll (e.g. "Bring a laptop"); null/blank = none */
+    @Column(columnDefinition = "TEXT")
+    private String prerequisite;
 
     /** Optional question the poster wants students to answer when enrolling; null/blank = no question shown */
     private String customQuestion;
@@ -40,6 +48,7 @@ public class WorkshopPosting {
     private Mode mode;
 
     private String sessionDate;
+    private String sessionEndDate;
     private String sessionTime;
     private Integer durationMinutes;
 
@@ -48,6 +57,8 @@ public class WorkshopPosting {
 
     @Column(columnDefinition = "TEXT")
     private String venueAddress;
+
+    private String venueMapUrl;
 
     private String meetingLink;
 

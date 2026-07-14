@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, X, Users } from 'lucide-react';
 import api from '../../services/api';
 import { ROLE_AREAS } from '../../constants/roleAreas';
+import MultiSelectDropdown from '../../components/MultiSelectDropdown';
 
 const PRIMARY = '#3F41D1';
 const BORDER = '#E2E8F0';
@@ -15,18 +16,31 @@ const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }>
   UNPUBLISHED: { label: 'Unpublished',      color: SUB,        bg: '#F1F5F9' },
 };
 
+const REVIEW_QUESTION_LABELS: Record<string, string> = {
+  trainerClarity: 'Explained concepts clearly',
+  trainerEngagement: 'Effectively answered questions & engaged participants',
+  venueComfort: 'Venue was comfortable and well-organized',
+  venueAccessibility: 'Venue was easy to find and accessible',
+  venueFacilities: 'Venue had all necessary facilities',
+  wouldRecommend: 'Would recommend this workshop',
+};
+
 interface Trainer { id: number; name: string; email: string; }
 interface Workshop {
-  id: number; title: string; description: string; targetRole: string; mode: string;
-  sessionDate: string; sessionTime: string; durationMinutes: number | null; city: string; state: string; venueAddress: string;
+  id: number; title: string; description: string; targetRoles: string[]; mode: string;
+  sessionDate: string; sessionEndDate: string; sessionTime: string; city: string; state: string; venueAddress: string; venueMapUrl: string | null;
   feeAmount: number; totalSeats: number; seatsConfirmed: number;
   status: string; rejectionReason: string; rating: number | null; trainerName: string; posterName: string;
-  customQuestion: string | null; facultyId: number | null;
+  prerequisite: string | null; facultyId: number | null;
 }
 interface RosterStudent { id: number; name: string; studentId: string; degree: string; yearOfPassing: string; }
 interface EnrollmentRow {
   id: number; studentName: string; studentEmail: string; status: string;
   waitlistPosition: number | null; formAnswer: string; enrolledVia: string; createdAt: string;
+}
+interface Review {
+  id: number; studentName: string; trainerRating: number; venueRating: number | null; overallRating: number;
+  comment: string; answers: Record<string, string> | null; createdAt: string;
 }
 
 function EnrollmentsModal({ workshop, onClose }: { workshop: Workshop; onClose: () => void }) {
@@ -65,6 +79,54 @@ function EnrollmentsModal({ workshop, onClose }: { workshop: Workshop; onClose: 
                 </span>
               </div>
               {r.formAnswer && <p style={{ margin: '6px 0 0', fontSize: '12px', color: TEXT, lineHeight: 1.5 }}>{r.formAnswer}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewsModal({ workshop, onClose }: { workshop: Workshop; onClose: () => void }) {
+  const [rows, setRows] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/institute/workshops/${workshop.id}/reviews`)
+      .then(res => setRows(res.data?.data ?? []))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [workshop.id]);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: `1px solid ${BORDER}` }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: TEXT }}>Reviews — {workshop.title}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB }}><X size={20} /></button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px' }}>
+          {loading ? (
+            <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', padding: '24px 0' }}>Loading…</p>
+          ) : rows.length === 0 ? (
+            <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', padding: '24px 0' }}>No reviews yet.</p>
+          ) : rows.map(r => (
+            <div key={r.id} style={{ padding: '14px 0', borderBottom: `1px solid ${BORDER}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{r.studentName}</span>
+                <span style={{ fontSize: '12px', color: SUB }}>Trainer: {r.trainerRating}/5{r.venueRating != null ? ` · Venue: ${r.venueRating}/5` : ''} · Overall: {r.overallRating}/5</span>
+              </div>
+              {r.comment && <p style={{ margin: '0 0 8px', fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>{r.comment}</p>}
+              {r.answers && Object.keys(r.answers).length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {Object.entries(r.answers).map(([k, v]) => (
+                    <div key={k} style={{ fontSize: '11px', color: SUB, display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                      <span>{REVIEW_QUESTION_LABELS[k] ?? k}</span>
+                      <span style={{ fontWeight: 600, color: TEXT }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -134,7 +196,14 @@ function BulkEnrollModal({ workshop, onClose }: { workshop: Workshop; onClose: (
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px' }}>
               {roster.length === 0 ? (
                 <p style={{ fontSize: '13px', color: SUB, textAlign: 'center', padding: '24px 0' }}>No students in your roster yet.</p>
-              ) : roster.map(s => (
+              ) : (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={selected.size === roster.length}
+                    onChange={() => setSelected(selected.size === roster.length ? new Set() : new Set(roster.map(s => s.id)))} />
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: TEXT }}>Select All ({roster.length})</div>
+                </label>
+              )}
+              {roster.map(s => (
                 <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}>
                   <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)} />
                   <div>
@@ -165,6 +234,7 @@ export default function WorkshopsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [bulkTarget, setBulkTarget] = useState<Workshop | null>(null);
   const [rosterTarget, setRosterTarget] = useState<Workshop | null>(null);
+  const [reviewsTarget, setReviewsTarget] = useState<Workshop | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'mine' | 'browse'>('mine');
@@ -172,18 +242,19 @@ export default function WorkshopsPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [targetRole, setTargetRole] = useState('');
+  const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [facultyId, setFacultyId] = useState('');
   const [mode, setMode] = useState<'ONLINE' | 'IN_PERSON'>('ONLINE');
   const [sessionDate, setSessionDate] = useState('');
+  const [sessionEndDate, setSessionEndDate] = useState('');
   const [sessionTime, setSessionTime] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
+  const [venueMapUrl, setVenueMapUrl] = useState('');
   const [feeAmount, setFeeAmount] = useState('');
   const [totalSeats, setTotalSeats] = useState('');
-  const [customQuestion, setCustomQuestion] = useState('');
+  const [prerequisite, setPrerequisite] = useState('');
 
   const load = () => {
     api.get('/institute/workshops').then(res => setWorkshops(res.data?.data ?? [])).catch(() => setWorkshops([]));
@@ -197,40 +268,39 @@ export default function WorkshopsPage() {
   useEffect(() => { load(); loadBrowse(); }, []);
 
   const resetForm = () => {
-    setTitle(''); setDescription(''); setTargetRole(''); setFacultyId(''); setMode('ONLINE');
-    setSessionDate(''); setSessionTime(''); setDurationMinutes(''); setCity(''); setState(''); setVenueAddress('');
-    setFeeAmount(''); setTotalSeats(''); setCustomQuestion(''); setError(''); setEditId(null);
+    setTitle(''); setDescription(''); setTargetRoles([]); setFacultyId(''); setMode('ONLINE');
+    setSessionDate(''); setSessionEndDate(''); setSessionTime(''); setCity(''); setState(''); setVenueAddress(''); setVenueMapUrl('');
+    setFeeAmount(''); setTotalSeats(''); setPrerequisite(''); setError(''); setEditId(null);
   };
 
   const openEdit = (w: Workshop) => {
-    setTitle(w.title); setDescription(w.description ?? ''); setTargetRole(w.targetRole);
+    setTitle(w.title); setDescription(w.description ?? ''); setTargetRoles(w.targetRoles ?? []);
     setFacultyId(w.facultyId ? String(w.facultyId) : '');
     setMode(w.mode as 'ONLINE' | 'IN_PERSON');
-    setSessionDate(w.sessionDate); setSessionTime(w.sessionTime);
-    setDurationMinutes(w.durationMinutes ? String(w.durationMinutes) : '');
-    setCity(w.city ?? ''); setState(w.state ?? ''); setVenueAddress(w.venueAddress ?? '');
+    setSessionDate(w.sessionDate); setSessionEndDate(w.sessionEndDate ?? ''); setSessionTime(w.sessionTime);
+    setCity(w.city ?? ''); setState(w.state ?? ''); setVenueAddress(w.venueAddress ?? ''); setVenueMapUrl(w.venueMapUrl ?? '');
     setFeeAmount(w.feeAmount ? String(w.feeAmount) : ''); setTotalSeats(String(w.totalSeats));
-    setCustomQuestion(w.customQuestion ?? '');
+    setPrerequisite(w.prerequisite ?? '');
     setEditId(w.id); setError(''); setShowAdd(true);
   };
 
   const handleAdd = async () => {
-    if (!title || !targetRole || !sessionDate || !sessionTime || !totalSeats) {
-      setError('Please fill title, target role, date, time, and total seats.'); return;
+    if (!title || targetRoles.length === 0 || !sessionDate || !totalSeats) {
+      setError('Please fill title, target role, date, and total seats.'); return;
     }
     if (mode === 'IN_PERSON' && !city) { setError('City is required for in-person workshops.'); return; }
     setSaving(true); setError('');
     const payload = {
-      title, description, targetRole,
+      title, description, targetRoles,
       facultyId: facultyId ? Number(facultyId) : null,
-      mode, sessionDate, sessionTime,
-      durationMinutes: durationMinutes ? Number(durationMinutes) : null,
+      mode, sessionDate, sessionEndDate: sessionEndDate || null, sessionTime: sessionTime || null,
       city: mode === 'IN_PERSON' ? city : null,
       state: mode === 'IN_PERSON' ? state : null,
       venueAddress: mode === 'IN_PERSON' ? venueAddress : null,
+      venueMapUrl: mode === 'IN_PERSON' ? (venueMapUrl || null) : null,
       feeAmount: feeAmount ? Number(feeAmount) : 0,
       totalSeats: Number(totalSeats),
-      customQuestion: customQuestion || null,
+      prerequisite: prerequisite || null,
     };
     try {
       if (editId) await api.put(`/institute/workshops/${editId}`, payload);
@@ -276,13 +346,13 @@ export default function WorkshopsPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
                     <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{w.title}</div>
-                    <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{w.targetRole} · {w.trainerName ?? 'No trainer assigned'}</div>
+                    <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{(w.targetRoles ?? []).join(', ')} · {w.trainerName ?? 'No trainer assigned'}</div>
                   </div>
                   <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: st.bg, color: st.color }}>{st.label}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: SUB, flexWrap: 'wrap' }}>
                   <span>{w.mode === 'ONLINE' ? 'Online' : w.city}</span>
-                  <span>{w.sessionDate} {w.sessionTime}{w.durationMinutes ? ` · ${w.durationMinutes} min` : ''}</span>
+                  <span>{w.sessionDate}{w.sessionEndDate && w.sessionEndDate !== w.sessionDate ? ` – ${w.sessionEndDate}` : ''} {w.sessionTime}</span>
                   <span>{w.seatsConfirmed}/{w.totalSeats} seats filled</span>
                   <span>{w.feeAmount ? `₹${w.feeAmount}` : 'Free'}</span>
                   {w.rating != null && <span>★ {w.rating}</span>}
@@ -302,6 +372,10 @@ export default function WorkshopsPage() {
                       <button onClick={() => setRosterTarget(w)}
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                         <Users size={13} /> View Enrollments
+                      </button>
+                      <button onClick={() => setReviewsTarget(w)}
+                        style={{ padding: '8px 16px', borderRadius: '100px', border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        Reviews{w.rating != null ? ` (★ ${w.rating})` : ''}
                       </button>
                     </>
                   )}
@@ -325,12 +399,12 @@ export default function WorkshopsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 700, color: TEXT }}>{w.title}</div>
-                  <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{w.targetRole} · {w.posterName ?? 'Unknown poster'}{w.trainerName ? ` · ${w.trainerName}` : ''}</div>
+                  <div style={{ fontSize: '12px', color: SUB, marginTop: '2px' }}>{(w.targetRoles ?? []).join(', ')} · {w.posterName ?? 'Unknown poster'}{w.trainerName ? ` · ${w.trainerName}` : ''}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: SUB, flexWrap: 'wrap', marginBottom: '12px' }}>
                 <span>{w.mode === 'ONLINE' ? 'Online' : w.city}</span>
-                <span>{w.sessionDate} {w.sessionTime}{w.durationMinutes ? ` · ${w.durationMinutes} min` : ''}</span>
+                <span>{w.sessionDate}{w.sessionEndDate && w.sessionEndDate !== w.sessionDate ? ` – ${w.sessionEndDate}` : ''} {w.sessionTime}</span>
                 <span>{w.seatsConfirmed}/{w.totalSeats} seats filled</span>
                 <span>{w.feeAmount ? `₹${w.feeAmount}` : 'Free'}</span>
                 {w.rating != null && <span>★ {w.rating}</span>}
@@ -361,11 +435,13 @@ export default function WorkshopsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <Field label="Title"><input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} /></Field>
               <Field label="Description"><textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical' as const }} /></Field>
-              <Field label="Target Role">
-                <select value={targetRole} onChange={e => setTargetRole(e.target.value)} style={inputStyle}>
-                  <option value="">Select a role</option>
-                  {ROLE_AREAS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+              <Field label="Workshop Prerequisite (optional)">
+                <textarea value={prerequisite} onChange={e => setPrerequisite(e.target.value)} rows={2} placeholder="e.g. Bring a laptop with Python installed"
+                  style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical' as const }} />
+              </Field>
+              <Field label="Target Role(s)">
+                <MultiSelectDropdown options={ROLE_AREAS} selected={targetRoles} onChange={setTargetRoles}
+                  placeholder="Select target role(s)" primaryColor={PRIMARY} borderColor={BORDER} textColor={TEXT} />
               </Field>
               <Field label="Trainer (from Faculty)">
                 <select value={facultyId} onChange={e => setFacultyId(e.target.value)} style={inputStyle}>
@@ -381,10 +457,9 @@ export default function WorkshopsPage() {
                     style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1.5px solid ${mode === 'IN_PERSON' ? PRIMARY : BORDER}`, background: mode === 'IN_PERSON' ? '#EEF2FF' : '#fff', color: mode === 'IN_PERSON' ? PRIMARY : TEXT, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>In-person</button>
                 </div>
               </Field>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-                <Field label="Date"><input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} style={inputStyle} /></Field>
-                <Field label="Time"><input type="time" value={sessionTime} onChange={e => setSessionTime(e.target.value)} style={inputStyle} /></Field>
-                <Field label="Duration (min)"><input type="number" value={durationMinutes} onChange={e => setDurationMinutes(e.target.value)} placeholder="60" style={inputStyle} /></Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <Field label="Start Date"><input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} style={inputStyle} /></Field>
+                <Field label="End Date"><input type="date" value={sessionEndDate} onChange={e => setSessionEndDate(e.target.value)} style={inputStyle} /></Field>
               </div>
               {mode === 'IN_PERSON' && (
                 <>
@@ -393,15 +468,13 @@ export default function WorkshopsPage() {
                     <Field label="State"><input value={state} onChange={e => setState(e.target.value)} style={inputStyle} /></Field>
                   </div>
                   <Field label="Venue Address"><textarea value={venueAddress} onChange={e => setVenueAddress(e.target.value)} rows={2} style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical' as const }} /></Field>
+                  <Field label="Venue Google Pin Location URL"><input value={venueMapUrl} onChange={e => setVenueMapUrl(e.target.value)} placeholder="https://maps.google.com/…" style={inputStyle} /></Field>
                 </>
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <Field label="Fee (₹, 0 = free)"><input type="number" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} style={inputStyle} /></Field>
                 <Field label="Total Seats"><input type="number" value={totalSeats} onChange={e => setTotalSeats(e.target.value)} style={inputStyle} /></Field>
               </div>
-              <Field label="Ask students a question when they enroll (optional)">
-                <input value={customQuestion} onChange={e => setCustomQuestion(e.target.value)} placeholder="e.g. Why are you interested in this workshop?" style={inputStyle} />
-              </Field>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
@@ -420,6 +493,7 @@ export default function WorkshopsPage() {
 
       {bulkTarget && <BulkEnrollModal workshop={bulkTarget} onClose={() => setBulkTarget(null)} />}
       {rosterTarget && <EnrollmentsModal workshop={rosterTarget} onClose={() => setRosterTarget(null)} />}
+      {reviewsTarget && <ReviewsModal workshop={reviewsTarget} onClose={() => setReviewsTarget(null)} />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 package com.hubblehox.e2j.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubblehox.e2j.dto.WorkshopReviewDto;
 import com.hubblehox.e2j.entity.*;
 import com.hubblehox.e2j.exception.AppException;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class WorkshopReviewService {
     private final WorkshopPostingRepository workshopRepo;
     private final StudentRepository studentRepo;
     private final UserRepository userRepo;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private Student getStudent(String email) {
         User user = userRepo.findByEmail(email)
@@ -56,12 +59,19 @@ public class WorkshopReviewService {
         if (reviewRepo.findByEnrollment(enrollment).isPresent())
             throw new AppException("Review already submitted", HttpStatus.CONFLICT);
 
+        String answersJson = null;
+        try {
+            if (req.getAnswers() != null && !req.getAnswers().isEmpty())
+                answersJson = objectMapper.writeValueAsString(req.getAnswers());
+        } catch (Exception ignored) {}
+
         WorkshopReview review = WorkshopReview.builder()
                 .enrollment(enrollment)
                 .trainerRating(req.getTrainerRating())
                 .venueRating(req.getVenueRating())
                 .overallRating(req.getOverallRating())
                 .comment(req.getComment())
+                .answersJson(answersJson)
                 .build();
         review = reviewRepo.save(review);
 
@@ -83,6 +93,11 @@ public class WorkshopReviewService {
 
     private WorkshopReviewDto.Response toResponse(WorkshopReview r) {
         WorkshopEnrollment e = r.getEnrollment();
+        Map<String, String> answers = null;
+        try {
+            if (r.getAnswersJson() != null) answers = objectMapper.readValue(r.getAnswersJson(), Map.class);
+        } catch (Exception ignored) {}
+
         return WorkshopReviewDto.Response.builder()
                 .id(r.getId())
                 .workshopId(e.getWorkshop().getId())
@@ -91,6 +106,7 @@ public class WorkshopReviewService {
                 .venueRating(r.getVenueRating())
                 .overallRating(r.getOverallRating())
                 .comment(r.getComment())
+                .answers(answers)
                 .createdAt(r.getCreatedAt() != null ? r.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
                 .build();
     }

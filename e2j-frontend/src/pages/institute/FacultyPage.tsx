@@ -12,7 +12,6 @@ const MOCK_FACULTY: Faculty[] = [
 ];
 
 const EXPERTISE_OPTIONS = ['UI Designing', 'UX Designing', 'User Research', 'Market Research', 'Applied Cryptography', 'Computer Networks', 'Cyber Security', 'Python', 'Data Science', 'Machine Learning', 'Java', 'Spring Boot', 'Cloud Computing', 'AWS', 'DevOps', 'React', 'Node.js'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const TIME_OPTIONS = ['8:00 Am', '9:00 Am', '10:00 Am', '11:00 Am', '12:00 Pm', '1:00 Pm', '2:00 Pm', '3:00 Pm', '4:00 Pm', '5:00 Pm', '6:00 Pm'];
 const DELIVERY_MODES = ['Online', 'Offline', 'Hybrid'];
@@ -161,9 +160,10 @@ export default function FacultyPage() {
   const [email, setEmail] = useState('');
   const [expertise, setExpertise] = useState<string[]>([]);
   const [bio, setBio] = useState('');
-  const [months, setMonths] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [days, setDays] = useState<string[]>([]);
-  const [timeSlots, setTimeSlots] = useState([{ from: '', to: '' }, { from: '', to: '' }]);
+  const [timeSlots, setTimeSlots] = useState([{ from: '', to: '' }]);
   const [deliveryModes, setDeliveryModes] = useState<string[]>([]);
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function FacultyPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.post('/institute/faculty', { name: smeName, email, expertise, bio, months, days, timeSlots, deliveryModes });
+      await api.post('/institute/faculty', { name: smeName, email, expertise, bio, startDate, endDate, days, timeSlots, deliveryModes });
       setView('list');
     } catch { /* noop */ } finally { setSaving(false); }
   };
@@ -368,8 +368,15 @@ export default function FacultyPage() {
         {/* Availability */}
         <div style={{ marginBottom: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1E293B', margin: '0 0 16px' }}>Availability</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-            <ChipSelect label="Month" options={MONTHS} value={months} onChange={setMonths} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', top: '-9px', left: '10px', background: '#fff', padding: '0 4px', fontSize: '11px', color: '#64748B', zIndex: 1 }}>Start Date</span>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...inputSt, padding: '12px 14px' }} />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', top: '-9px', left: '10px', background: '#fff', padding: '0 4px', fontSize: '11px', color: '#64748B', zIndex: 1 }}>End Date</span>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...inputSt, padding: '12px 14px' }} />
+            </div>
             <ChipSelect label="Day" options={DAYS} value={days} onChange={setDays} />
           </div>
 
@@ -393,9 +400,9 @@ export default function FacultyPage() {
                 </select>
                 <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none' }}>▼</span>
               </div>
-              <button onClick={() => setTimeSlots(ts => ts.filter((_, i) => i !== idx))}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Trash2 size={15} color="#4F46E5" />
+              <button onClick={() => setTimeSlots(ts => ts.filter((_, i) => i !== idx))} disabled={timeSlots.length === 1}
+                style={{ width: '36px', height: '36px', borderRadius: '8px', background: timeSlots.length === 1 ? '#F1F5F9' : '#EEF2FF', border: 'none', cursor: timeSlots.length === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={15} color={timeSlots.length === 1 ? '#CBD5E1' : '#4F46E5'} />
               </button>
               {idx === timeSlots.length - 1 && (
                 <button onClick={() => setTimeSlots(ts => [...ts, { from: '', to: '' }])}

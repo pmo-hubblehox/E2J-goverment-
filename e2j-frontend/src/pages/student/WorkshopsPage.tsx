@@ -10,27 +10,26 @@ const SUB = '#64748B';
 
 interface Workshop {
   id: number; posterName: string; trainerName: string; title: string; description: string;
-  targetRole: string; mode: string; sessionDate: string; sessionTime: string; durationMinutes: number | null;
-  city: string; state: string; venueAddress: string; meetingLink: string;
+  targetRoles: string[]; mode: string; sessionDate: string; sessionEndDate: string; sessionTime: string;
+  city: string; state: string; venueAddress: string; venueMapUrl: string | null; meetingLink: string;
   feeAmount: number; totalSeats: number; seatsConfirmed: number;
-  status: string; rating: number | null; customQuestion: string | null;
+  status: string; rating: number | null; prerequisite: string | null;
 }
 
 interface Enrollment {
   id: number; workshopId: number; workshopTitle: string; mode: string;
-  sessionDate: string; sessionTime: string; durationMinutes: number | null; meetingLink: string; venueAddress: string;
+  sessionDate: string; sessionEndDate: string; sessionTime: string; meetingLink: string; venueAddress: string; venueMapUrl: string | null;
   status: string; waitlistPosition: number | null; feeAmount: number; createdAt: string;
 }
 
 function EnrollModal({ workshop, onClose, onDone }: { workshop: Workshop; onClose: () => void; onDone: () => void }) {
-  const [formAnswer, setFormAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
     setSubmitting(true); setError('');
     try {
-      await api.post(`/student/workshops/${workshop.id}/enroll`, { formAnswer });
+      await api.post(`/student/workshops/${workshop.id}/enroll`, {});
       onDone();
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Failed to enroll. Please try again.');
@@ -52,12 +51,18 @@ function EnrollModal({ workshop, onClose, onDone }: { workshop: Workshop; onClos
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ fontSize: '13px', color: SUB }}>Date</span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{workshop.sessionDate}</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{workshop.sessionDate}{workshop.sessionEndDate && workshop.sessionEndDate !== workshop.sessionDate ? ` – ${workshop.sessionEndDate}` : ''}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ fontSize: '13px', color: SUB }}>Time</span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{workshop.sessionTime}{workshop.durationMinutes ? ` (${workshop.durationMinutes} min)` : ''}</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{workshop.sessionTime}</span>
           </div>
+          {workshop.mode === 'IN_PERSON' && workshop.venueMapUrl && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: SUB }}>Location</span>
+              <a href={workshop.venueMapUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY }}>View on map</a>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ fontSize: '13px', color: SUB }}>Mode</span>
             <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{workshop.mode === 'ONLINE' ? 'Online' : `${workshop.city}, ${workshop.state}`}</span>
@@ -70,11 +75,10 @@ function EnrollModal({ workshop, onClose, onDone }: { workshop: Workshop; onClos
           </div>
         </div>
 
-        {workshop.customQuestion && (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: SUB, display: 'block', marginBottom: '6px' }}>{workshop.customQuestion}</label>
-            <textarea value={formAnswer} onChange={e => setFormAnswer(e.target.value)} rows={3}
-              style={{ width: '100%', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', resize: 'vertical' }} />
+        {workshop.prerequisite && (
+          <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#9A3412', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '4px' }}>Prerequisite</div>
+            <div style={{ fontSize: '13px', color: '#7C2D12', lineHeight: 1.5 }}>{workshop.prerequisite}</div>
           </div>
         )}
 
@@ -97,14 +101,26 @@ function EnrollModal({ workshop, onClose, onDone }: { workshop: Workshop; onClos
   );
 }
 
+const REVIEW_QUESTIONS = [
+  { key: 'trainerClarity',    label: 'The trainer explained concepts clearly', inPersonOnly: false },
+  { key: 'trainerEngagement', label: 'The trainer effectively answered questions and engaged participants', inPersonOnly: false },
+  { key: 'venueComfort',      label: 'The venue was comfortable and well-organized', inPersonOnly: true },
+  { key: 'venueAccessibility', label: 'The venue was easy to find and accessible', inPersonOnly: true },
+  { key: 'venueFacilities',   label: 'The venue had all necessary facilities (seating, AV equipment, etc.)', inPersonOnly: true },
+  { key: 'wouldRecommend',    label: 'Would you recommend this workshop to others?', inPersonOnly: false },
+] as const;
+const REVIEW_LIKERT_OPTS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+
 function ReviewModal({ enrollment, onClose, onDone }: { enrollment: Enrollment; onClose: () => void; onDone: () => void }) {
   const [trainerRating, setTrainerRating] = useState(0);
   const [venueRating, setVenueRating] = useState(0);
   const [overallRating, setOverallRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const isInPerson = enrollment.mode === 'IN_PERSON';
+  const questions = REVIEW_QUESTIONS.filter(q => !q.inPersonOnly || isInPerson);
 
   const Stars = ({ value, onChange }: { value: number; onChange: (n: number) => void }) => (
     <div style={{ display: 'flex', gap: '4px' }}>
@@ -116,10 +132,11 @@ function ReviewModal({ enrollment, onClose, onDone }: { enrollment: Enrollment; 
 
   const handleSubmit = async () => {
     if (!overallRating || !trainerRating || (isInPerson && !venueRating)) { setError('Please rate all categories.'); return; }
+    if (questions.some(q => !answers[q.key])) { setError('Please answer all the feedback questions.'); return; }
     setSubmitting(true); setError('');
     try {
       await api.post(`/student/workshop-enrollments/${enrollment.id}/review`, {
-        trainerRating, venueRating: isInPerson ? venueRating : null, overallRating, comment,
+        trainerRating, venueRating: isInPerson ? venueRating : null, overallRating, comment, answers,
       });
       onDone();
     } catch (e: any) {
@@ -129,7 +146,7 @@ function ReviewModal({ enrollment, onClose, onDone }: { enrollment: Enrollment; 
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '440px', padding: '24px' }}>
+      <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: TEXT }}>Rate: {enrollment.workshopTitle}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: SUB }}><X size={20} /></button>
@@ -150,6 +167,19 @@ function ReviewModal({ enrollment, onClose, onDone }: { enrollment: Enrollment; 
             <label style={{ fontSize: '12px', fontWeight: 600, color: SUB, display: 'block', marginBottom: '6px' }}>Overall</label>
             <Stars value={overallRating} onChange={setOverallRating} />
           </div>
+          {questions.map(q => (
+            <div key={q.key}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: SUB, display: 'block', marginBottom: '6px' }}>{q.label}</label>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+                {REVIEW_LIKERT_OPTS.map(opt => (
+                  <button key={opt} type="button" onClick={() => setAnswers(a => ({ ...a, [q.key]: opt }))}
+                    style={{ padding: '5px 11px', borderRadius: '8px', border: `1.5px solid ${answers[q.key] === opt ? PRIMARY : BORDER}`, background: answers[q.key] === opt ? '#EEF2FF' : '#fff', color: answers[q.key] === opt ? PRIMARY : SUB, fontSize: '11px', fontWeight: answers[q.key] === opt ? 700 : 500, cursor: 'pointer' }}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
           <div>
             <label style={{ fontSize: '12px', fontWeight: 600, color: SUB, display: 'block', marginBottom: '6px' }}>Comments</label>
             <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3}
@@ -262,7 +292,7 @@ export default function WorkshopsPage() {
                     <div style={{ fontSize: '12px', color: SUB, marginBottom: '10px' }}>{w.posterName}{w.trainerName ? ` · ${w.trainerName}` : ''}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', fontSize: '12px', color: SUB, marginBottom: '12px' }}>
                       <span>{w.mode === 'ONLINE' ? 'Online' : w.city}</span>
-                      <span>{w.sessionDate} {w.sessionTime}{w.durationMinutes ? ` · ${w.durationMinutes} min` : ''}</span>
+                      <span>{w.sessionDate}{w.sessionEndDate && w.sessionEndDate !== w.sessionDate ? ` – ${w.sessionEndDate}` : ''} {w.sessionTime}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: `1px solid ${BORDER}` }}>
                       <div>
@@ -312,10 +342,12 @@ export default function WorkshopsPage() {
                     {e.status === 'CONFIRMED' ? 'Confirmed' : e.status === 'WAITLISTED' ? `Waitlisted #${e.waitlistPosition}` : 'Cancelled'}
                   </span>
                 </div>
-                <div style={{ fontSize: '12px', color: SUB, marginBottom: '10px' }}>{e.sessionDate} {e.sessionTime}{e.durationMinutes ? ` · ${e.durationMinutes} min` : ''}</div>
+                <div style={{ fontSize: '12px', color: SUB, marginBottom: '10px' }}>{e.sessionDate}{e.sessionEndDate && e.sessionEndDate !== e.sessionDate ? ` – ${e.sessionEndDate}` : ''} {e.sessionTime}</div>
                 {e.status === 'CONFIRMED' && (
                   <div style={{ fontSize: '12px', color: TEXT, marginBottom: '10px' }}>
-                    {e.mode === 'ONLINE' ? <>🔗 {e.meetingLink}</> : <>📍 {e.venueAddress}</>}
+                    {e.mode === 'ONLINE'
+                      ? <>🔗 {e.meetingLink}</>
+                      : <>📍 {e.venueAddress}{e.venueMapUrl && <> · <a href={e.venueMapUrl} target="_blank" rel="noopener noreferrer" style={{ color: PRIMARY }}>View on map</a></>}</>}
                   </div>
                 )}
                 {e.status !== 'CANCELLED' && (

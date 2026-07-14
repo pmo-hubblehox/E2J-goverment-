@@ -9,6 +9,15 @@ const SUB     = '#64748B';
 const BORDER  = '#E2E8F0';
 const BG      = '#F8FAFC';
 
+const REVIEW_QUESTION_LABELS: Record<string, string> = {
+  trainerClarity: 'Explained concepts clearly',
+  trainerEngagement: 'Effectively answered questions & engaged participants',
+  venueComfort: 'Venue was comfortable and well-organized',
+  venueAccessibility: 'Venue was easy to find and accessible',
+  venueFacilities: 'Venue had all necessary facilities',
+  wouldRecommend: 'Would recommend this workshop',
+};
+
 interface Workshop {
   id: number;
   posterName: string;
@@ -16,10 +25,11 @@ interface Workshop {
   description: string;
   mode: string;
   sessionDate: string;
+  sessionEndDate: string;
   sessionTime: string;
-  durationMinutes: number | null;
   city: string;
   venueAddress: string;
+  venueMapUrl: string | null;
   meetingLink: string;
   totalSeats: number;
   seatsConfirmed: number;
@@ -28,7 +38,7 @@ interface Workshop {
 }
 
 interface RosterRow { studentName: string; studentEmail: string; status: string; }
-interface Review { id: number; studentName: string; trainerRating: number; venueRating: number | null; overallRating: number; comment: string; createdAt: string; }
+interface Review { id: number; studentName: string; trainerRating: number; venueRating: number | null; overallRating: number; comment: string; answers: Record<string, string> | null; createdAt: string; }
 
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   PENDING:  { label: 'Pending Approval', color: '#92400E', bg: '#FEF3C7' },
@@ -85,7 +95,7 @@ export default function SmeDashboardPage() {
             </button>
             <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 700, color: TEXT }}>{selected.title}</h2>
             <p style={{ margin: '0 0 20px', fontSize: '13px', color: SUB }}>
-              {selected.posterName} · {selected.mode === 'ONLINE' ? 'Online' : selected.city} · {selected.sessionDate} {selected.sessionTime}{selected.durationMinutes ? ` (${selected.durationMinutes} min)` : ''}
+              {selected.posterName} · {selected.mode === 'ONLINE' ? 'Online' : selected.city} · {selected.sessionDate}{selected.sessionEndDate && selected.sessionEndDate !== selected.sessionDate ? ` – ${selected.sessionEndDate}` : ''} {selected.sessionTime}
             </p>
 
             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -127,7 +137,17 @@ export default function SmeDashboardPage() {
                       <span style={{ fontSize: '13px', fontWeight: 600, color: TEXT }}>{r.studentName}</span>
                       <span style={{ fontSize: '12px', color: SUB }}>Trainer: {r.trainerRating}/5{r.venueRating != null ? ` · Venue: ${r.venueRating}/5` : ''} · Overall: {r.overallRating}/5</span>
                     </div>
-                    {r.comment && <p style={{ margin: 0, fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>{r.comment}</p>}
+                    {r.comment && <p style={{ margin: '0 0 8px', fontSize: '13px', color: TEXT, lineHeight: 1.6 }}>{r.comment}</p>}
+                    {r.answers && Object.keys(r.answers).length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingTop: '8px', borderTop: `1px solid ${BORDER}` }}>
+                        {Object.entries(r.answers).map(([k, v]) => (
+                          <div key={k} style={{ fontSize: '11px', color: SUB, display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                            <span>{REVIEW_QUESTION_LABELS[k] ?? k}</span>
+                            <span style={{ fontWeight: 600, color: TEXT }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -160,7 +180,7 @@ export default function SmeDashboardPage() {
                       </div>
                       <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: SUB }}>
                         <span>{w.mode === 'ONLINE' ? 'Online' : w.city}</span>
-                        <span>{w.sessionDate} {w.sessionTime}{w.durationMinutes ? ` · ${w.durationMinutes} min` : ''}</span>
+                        <span>{w.sessionDate}{w.sessionEndDate && w.sessionEndDate !== w.sessionDate ? ` – ${w.sessionEndDate}` : ''} {w.sessionTime}</span>
                         <span>{w.seatsConfirmed}/{w.totalSeats} seats filled</span>
                         {w.rating != null && <span>★ {w.rating}</span>}
                       </div>
