@@ -199,6 +199,7 @@ export default function App() {
           <Route path="/industry-portal/campus/add" element={<AddCampusInvitePage />} />
           <Route path="/industry-portal/sme" element={<SmeListingPage />} />
           <Route path="/industry-portal/sme/add" element={<AddSmePage />} />
+          <Route path="/industry-portal/sme/:id/edit" element={<AddSmePage />} />
           <Route path="/industry-portal/venues" element={<IndustryVenuesPage />} />
           <Route path="/industry-portal/dashboard" element={<IndustryDashboardPage />} />
           <Route path="/industry-portal/profile" element={<IndustryProfilePage />} />

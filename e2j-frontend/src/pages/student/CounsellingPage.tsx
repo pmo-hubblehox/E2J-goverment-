@@ -1048,9 +1048,9 @@ export default function CounsellingPage() {
           </div>
         ) : bookingTab === 'list' ? (
           /* ── LIST VIEW ── */
-          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', overflow: 'visible' }}>
             {/* Header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1fr 0.6fr', padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, background: BG }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 1fr 0.6fr', padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, background: BG, borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
               {['Counselor Name ↑', 'Date ↑', 'Mode ↑', 'Link ↑', 'Status', 'Action'].map(h => (
                 <span key={h} style={{ fontSize: '12px', fontWeight: 600, color: SUB }}>{h}</span>
               ))}

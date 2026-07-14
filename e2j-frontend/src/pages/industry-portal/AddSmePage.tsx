@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronDown, Plus, Trash2, X } from 'lucide-react';
 import api from '../../services/api';
 
@@ -196,6 +196,8 @@ function ExpertiseSelect({ selected, onChange }: { selected: string[]; onChange:
 
 export default function AddSmePage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
   const [smeName, setSmeName] = useState('');
   const [email, setEmail] = useState('');
   const [expertiseArea, setExpertiseArea] = useState<string[]>([]);
@@ -208,7 +210,29 @@ export default function AddSmePage() {
   const [mode, setMode] = useState('');
   const [locationName, setLocationName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEdit);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isEdit) return;
+    api.get(`/industry-portal/sme/${id}`)
+      .then(r => {
+        const s = r.data?.data ?? {};
+        setSmeName(s.smeName ?? '');
+        setEmail(s.email ?? '');
+        try { setExpertiseArea(s.expertiseArea ? JSON.parse(s.expertiseArea) : []); } catch { setExpertiseArea([]); }
+        setBio(s.bio ?? '');
+        setAvailableFrom(s.availableFrom ?? '');
+        setAvailableTo(s.availableTo ?? '');
+        setRecurEvery(s.recurEvery ?? '');
+        try { setSelectedDays(s.days ? JSON.parse(s.days) : []); } catch { setSelectedDays([]); }
+        try { setTimeSlots(s.timeSlots ? JSON.parse(s.timeSlots) : [{ from: '', to: '' }]); } catch { setTimeSlots([{ from: '', to: '' }]); }
+        setMode(s.mode ?? '');
+        setLocationName(s.locationName ?? s.meetingLink ?? '');
+      })
+      .catch(() => alert('Failed to load SME.'))
+      .finally(() => setLoading(false));
+  }, [id, isEdit]);
 
   const addTimeSlot = () => setTimeSlots(s => [...s, { from: '', to: '' }]);
   const removeTimeSlot = (i: number) => setTimeSlots(s => s.filter((_, idx) => idx !== i));
@@ -220,7 +244,7 @@ export default function AddSmePage() {
     if (!email) return alert('Email is required.');
     setSaving(true);
     try {
-      await api.post('/industry-portal/sme', {
+      const payload = {
         smeName,
         email,
         expertiseArea: JSON.stringify(expertiseArea),
@@ -233,7 +257,9 @@ export default function AddSmePage() {
         mode,
         locationName,
         status: 'PUBLISHED',
-      });
+      };
+      if (isEdit) await api.put(`/industry-portal/sme/${id}`, payload);
+      else await api.post('/industry-portal/sme', payload);
       setSuccess(true);
     } catch {
       alert('Failed to save. Please try again.');
@@ -241,6 +267,8 @@ export default function AddSmePage() {
       setSaving(false);
     }
   };
+
+  if (loading) return <div style={{ padding: '32px', fontSize: '14px', color: SUB }}>Loading…</div>;
 
   return (
     <div style={{ padding: '32px', maxWidth: '1100px' }}>
@@ -375,7 +403,7 @@ export default function AddSmePage() {
         </button>
         <button type="button" onClick={handleSubmit} disabled={saving}
           style={{ padding: '0 36px', height: '44px', borderRadius: '100px', border: 'none', background: '#E91E8C', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-          {saving ? 'Saving…' : 'Submit'}
+          {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Submit'}
         </button>
       </div>
 
@@ -383,7 +411,7 @@ export default function AddSmePage() {
       {success && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#fff', borderRadius: '16px', padding: '40px 48px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxWidth: '340px', width: '90%' }}>
-            <p style={{ margin: '0 0 24px', fontSize: '16px', fontWeight: 700, color: PRIMARY }}>SME is Added Successfully!</p>
+            <p style={{ margin: '0 0 24px', fontSize: '16px', fontWeight: 700, color: PRIMARY }}>{isEdit ? 'SME Updated Successfully!' : 'SME is Added Successfully!'}</p>
             <button onClick={() => navigate('/industry-portal/sme')}
               style={{ padding: '0 40px', height: '44px', borderRadius: '100px', border: 'none', background: PRIMARY, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
               Ok
