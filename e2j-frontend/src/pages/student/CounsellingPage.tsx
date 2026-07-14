@@ -1089,10 +1089,17 @@ export default function CounsellingPage() {
                       <>
                         <div onClick={() => setActionMenuOpen(null)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
                         <div style={{ position: 'absolute', right: 0, top: '28px', zIndex: 11, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '180px', overflow: 'hidden', textAlign: 'left' }}>
+                          <button onClick={() => {
+                              setActionMenuOpen(null);
+                              openProfile({ id: b.counsellorId, name: b.counsellorName, email: '', photoUrl: b.counsellorPhoto, specialty: null, experienceYears: null, experienceMonths: null, skills: [], languages: [], feeAmount: 0, feeType: '', rating: 0 });
+                            }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left' }}>
+                            <ExternalLink size={14} color={PRIMARY} /> View Counsellor Profile
+                          </button>
                           {b.status === 'COMPLETED' ? (
                             <>
                               <button onClick={() => { setActionMenuOpen(null); setFeedbackReportTarget(b); }}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left' }}>
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: TEXT, textAlign: 'left', borderTop: `1px solid ${BORDER}` }}>
                                 <FileText size={14} color={PRIMARY} /> View Report
                               </button>
                               {b.hasFeedback ? (

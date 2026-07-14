@@ -27,6 +27,7 @@ public class CounsellorController {
     private final StudentBookingRepository          bookingRepo;
     private final PsychometricReportRepository      psychometricReportRepo;
     private final com.hubblehox.e2j.service.PsychometricService psychometricService;
+    private final com.hubblehox.e2j.service.StudentProfileService studentProfileService;
     private final JavaMailSender mailSender;
 
     private Counsellor get(User user) {
@@ -396,6 +397,19 @@ public class CounsellorController {
                 .orElseThrow(() -> new AppException("Not found", HttpStatus.NOT_FOUND));
         sessionRepo.delete(s);
         return ResponseEntity.ok(ApiResponse.ok(null, "Deleted"));
+    }
+
+    // ── Student profile (view-only, for a booked student) ───────────────────────
+
+    @GetMapping("/bookings/{id}/student-profile")
+    public ResponseEntity<ApiResponse<com.hubblehox.e2j.dto.StudentProfileDto>> getStudentProfile(
+            @AuthenticationPrincipal User user, @PathVariable Long id) {
+        Counsellor c = get(user);
+        StudentBooking booking = bookingRepo.findById(id)
+                .filter(b -> b.getCounsellor().getId().equals(c.getId()))
+                .orElseThrow(() -> new AppException("Booking not found", HttpStatus.NOT_FOUND));
+        User studentUser = booking.getStudent().getUser();
+        return ResponseEntity.ok(ApiResponse.ok(studentProfileService.getFullProfile(studentUser)));
     }
 
     // ── Mark session completed ───────────────────────────────────────────────
