@@ -20,7 +20,19 @@ public class PsychometricService {
     private final PsychometricQuestionRepository  questionRepo;
     private final PsychometricReportRepository    reportRepo;
     private final StudentEducationRepository      educationRepo;
+    private final StudentAspirationRepository     aspirationRepo;
     private final ObjectMapper                    objectMapper;
+
+    // Canonical ITI trade names — mirrors the "ITI & Vocational" group in the frontend's constants/roleAreas.ts.
+    // Kept here (not derived from the frontend) so the backend can classify a roleArea string without a network round-trip.
+    private static final Set<String> ITI_ROLES = Set.of(
+        "EV Mechanic", "EV Battery Technician", "EV Charging Station Technician", "Automotive Electrician"
+    );
+
+    /** Classifies a roleArea string into "ITI" or "TECH" — the single source of truth downstream code should call, never re-derive. */
+    public static String classifyTrack(String roleArea) {
+        return roleArea != null && ITI_ROLES.contains(roleArea.trim()) ? "ITI" : "TECH";
+    }
 
     private static final List<String> CATEGORIES = List.of("R", "I", "A", "S", "E", "C");
     private static final Map<String, String> CATEGORY_NAMES = Map.of(
@@ -47,6 +59,26 @@ public class PsychometricService {
         put("A+C", List.of("Web Designer", "Digital Media Producer", "Front-End Developer", "Graphic Technologist", "Content Management Specialist"));
     }};
 
+    // ITI trade recommendations keyed by top-2 category combo (sorted) — parallel to PATH_MAP, used when the student's aspiration track is ITI.
+    // Narrowed to the EV vertical only, mirroring the "ITI & Vocational" group in the frontend's constants/roleAreas.ts.
+    private static final Map<String, List<String>> ITI_PATH_MAP = new LinkedHashMap<>() {{
+        put("E+I", List.of("EV Battery Technician", "Automotive Electrician", "EV Mechanic"));
+        put("I+R", List.of("EV Mechanic", "EV Battery Technician"));
+        put("A+I", List.of("EV Battery Technician", "EV Mechanic"));
+        put("I+S", List.of("Automotive Electrician", "EV Charging Station Technician"));
+        put("C+I", List.of("EV Battery Technician", "EV Charging Station Technician"));
+        put("E+R", List.of("EV Mechanic", "Automotive Electrician"));
+        put("E+S", List.of("Automotive Electrician", "EV Charging Station Technician"));
+        put("A+E", List.of("EV Charging Station Technician", "EV Battery Technician"));
+        put("C+E", List.of("EV Charging Station Technician", "Automotive Electrician"));
+        put("A+S", List.of("EV Charging Station Technician", "Automotive Electrician"));
+        put("A+R", List.of("EV Mechanic", "EV Battery Technician"));
+        put("C+S", List.of("Automotive Electrician", "EV Charging Station Technician"));
+        put("C+R", List.of("EV Mechanic", "EV Battery Technician"));
+        put("R+S", List.of("EV Mechanic", "Automotive Electrician"));
+        put("A+C", List.of("EV Charging Station Technician", "EV Battery Technician"));
+    }};
+
     // ── Determine profile type from student education ─────────────────────────
 
     public String detectProfileType(Student student) {
@@ -58,6 +90,8 @@ public class PsychometricService {
                 .map(e -> e.getDegree().toLowerCase())
                 .findFirst().orElse("");
 
+            if (degree.matches(".*(iti|industrial training|ev mechanic|ev technician|electric vehicle|automotive electrician|battery technician|charging station).*"))
+                return "ITI";
             if (degree.matches(".*(b\\.?tech|m\\.?tech|b\\.?e|m\\.?e|bca|mca|b\\.?sc.*comp|computer|software|information tech|it|cse|ece|eee|mechanical|civil|electrical).*"))
                 return "TECH";
             if (degree.matches(".*(b\\.?com|m\\.?com|bba|mba|finance|accounting|economics|commerce|ca|chartered).*"))
@@ -134,9 +168,15 @@ public class PsychometricService {
         String top2 = sorted.size() > 1 ? sorted.get(1) : top1;
         String comboKey = buildComboKey(top1, top2);
 
-        List<String> paths = PATH_MAP.getOrDefault(comboKey,
-            PATH_MAP.getOrDefault(buildComboKey(top1, sorted.size() > 2 ? sorted.get(2) : top1),
-                List.of("Software Engineer", "Data Analyst", "Business Analyst", "Product Manager", "IT Consultant")));
+        boolean isIti = aspirationId != null && aspirationRepo.findById(aspirationId)
+            .map(a -> "ITI".equals(a.getTrack())).orElse(false);
+        Map<String, List<String>> pathMap = isIti ? ITI_PATH_MAP : PATH_MAP;
+        List<String> defaultPaths = isIti
+            ? List.of("EV Mechanic", "EV Battery Technician", "EV Charging Station Technician", "Automotive Electrician")
+            : List.of("Software Engineer", "Data Analyst", "Business Analyst", "Product Manager", "IT Consultant");
+
+        List<String> paths = pathMap.getOrDefault(comboKey,
+            pathMap.getOrDefault(buildComboKey(top1, sorted.size() > 2 ? sorted.get(2) : top1), defaultPaths));
 
         int total = scores.values().stream().mapToInt(Integer::intValue).sum();
         String topInterests = CATEGORY_NAMES.get(top1) + ", " + CATEGORY_NAMES.get(top2);

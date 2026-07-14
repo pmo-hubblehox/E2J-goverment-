@@ -17,9 +17,12 @@ public class PsychometricDataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (repo.count() > 0) return; // already seeded
+        if (repo.count() == 0) repo.saveAll(baseQuestions());
+        if (repo.findByProfileType("ITI").isEmpty()) repo.saveAll(itiQuestions());
+    }
 
-        List<PsychometricQuestion> questions = List.of(
+    private List<PsychometricQuestion> baseQuestions() {
+        return List.of(
 
             // ── TECH ── R (Realistic)
             q("I enjoy building or assembling hardware components and physical systems.", "R", "TECH", 1),
@@ -189,8 +192,52 @@ public class PsychometricDataSeeder implements ApplicationRunner {
             q("I enjoy checking work carefully to ensure accuracy and completeness.", "C", "GENERAL", 29),
             q("I like tasks that involve planning, scheduling, and systematic execution.", "C", "GENERAL", 30)
         );
+    }
 
-        repo.saveAll(questions);
+    private List<PsychometricQuestion> itiQuestions() {
+        return List.of(
+            // ── ITI ── R (Realistic)
+            q("I enjoy working with tools, machines, and equipment with my hands.", "R", "ITI", 1),
+            q("I like assembling, repairing, or fixing physical objects and mechanisms.", "R", "ITI", 2),
+            q("I prefer practical, hands-on work over sitting at a desk all day.", "R", "ITI", 3),
+            q("I enjoy operating machinery or working on a workshop floor.", "R", "ITI", 4),
+            q("I like seeing a physical result at the end of a day's work.", "R", "ITI", 5),
+
+            // ITI – I (Investigative)
+            q("I enjoy figuring out why a machine or circuit isn't working correctly.", "I", "ITI", 6),
+            q("I like understanding how mechanical or electrical systems work internally.", "I", "ITI", 7),
+            q("I enjoy testing and measuring to find the exact cause of a fault.", "I", "ITI", 8),
+            q("I like learning about new tools, materials, or techniques in my trade.", "I", "ITI", 9),
+            q("I find satisfaction in solving a tricky technical problem step by step.", "I", "ITI", 10),
+
+            // ITI – A (Artistic)
+            q("I enjoy making finished work look neat, precise, and well-crafted.", "A", "ITI", 11),
+            q("I like designing or sketching layouts before building something.", "A", "ITI", 12),
+            q("I take pride in the finish and appearance of my hands-on work.", "A", "ITI", 13),
+            q("I enjoy customizing or improving on a standard design.", "A", "ITI", 14),
+            q("I like working on projects that combine skill with creativity.", "A", "ITI", 15),
+
+            // ITI – S (Social)
+            q("I enjoy showing a colleague or apprentice how to do a task correctly.", "S", "ITI", 16),
+            q("I like working alongside a team on a shared job site or workshop.", "S", "ITI", 17),
+            q("I enjoy explaining a technical fix in simple terms to a customer.", "S", "ITI", 18),
+            q("I prefer jobs where I can help people solve everyday practical problems.", "S", "ITI", 19),
+            q("I like coordinating with others to get a job done safely and on time.", "S", "ITI", 20),
+
+            // ITI – E (Enterprising)
+            q("I would like to run my own workshop, garage, or repair business someday.", "E", "ITI", 21),
+            q("I enjoy taking charge of a job from start to finish.", "E", "ITI", 22),
+            q("I like quoting, negotiating, or discussing costs with a customer.", "E", "ITI", 23),
+            q("I am motivated by growing my skills into higher-paying, specialised work.", "E", "ITI", 24),
+            q("I enjoy supervising a small team or job site.", "E", "ITI", 25),
+
+            // ITI – C (Conventional)
+            q("I enjoy following safety procedures and checklists carefully.", "C", "ITI", 26),
+            q("I like keeping my tools, workspace, and equipment organised.", "C", "ITI", 27),
+            q("I prefer following a clear technical manual or blueprint over guessing.", "C", "ITI", 28),
+            q("I enjoy inspecting finished work carefully to make sure it meets standard.", "C", "ITI", 29),
+            q("I like routine maintenance work that follows a set schedule.", "C", "ITI", 30)
+        );
     }
 
     private PsychometricQuestion q(String text, String category, String profileType, int order) {

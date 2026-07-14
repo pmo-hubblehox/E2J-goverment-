@@ -15,11 +15,16 @@ public class CourseDataInitializer implements ApplicationRunner {
 
     private final CourseRepository courseRepo;
 
+    private static final String ITI_CATEGORY = "Vocational Trades";
+
     @Override
     public void run(ApplicationArguments args) {
-        if (courseRepo.count() > 0) return; // already seeded
+        if (courseRepo.count() == 0) courseRepo.saveAll(baseCourses());
+        if (!courseRepo.existsByCategory(ITI_CATEGORY)) courseRepo.saveAll(itiCourses());
+    }
 
-        List<Course> courses = List.of(
+    private List<Course> baseCourses() {
+        return List.of(
 
             // ── Project Management / Leadership ──────────────────────────────
             Course.builder()
@@ -224,7 +229,42 @@ public class CourseDataInitializer implements ApplicationRunner {
                 .targetRoles(List.of("ML Engineer", "AI Engineer", "Data Scientist", "Research Engineer"))
                 .build()
         );
+    }
 
-        courseRepo.saveAll(courses);
+    private List<Course> itiCourses() {
+        return List.of(
+
+            Course.builder()
+                .title("EV Battery & Motor Servicing Fundamentals")
+                .instructor("Karan Vora").rating(4.6).studentCount(2100).duration("60h").price(2199L)
+                .type(Course.CourseType.EXTERNAL).category(ITI_CATEGORY)
+                .skills(List.of("EV Battery Diagnostics", "Motor Servicing", "Charging Systems", "EV Safety"))
+                .targetRoles(List.of("EV Mechanic", "EV Battery Technician"))
+                .build(),
+
+            Course.builder()
+                .title("EV Charging Infrastructure & Station Maintenance")
+                .instructor("Priya Nair").rating(4.5).studentCount(1400).duration("45h").price(1899L)
+                .type(Course.CourseType.EXTERNAL).category(ITI_CATEGORY)
+                .skills(List.of("Charging Station Installation", "Fault Diagnosis", "Electrical Safety", "Grid Integration Basics"))
+                .targetRoles(List.of("EV Charging Station Technician", "Automotive Electrician"))
+                .build(),
+
+            Course.builder()
+                .title("Automotive Electrical Systems for EVs")
+                .instructor("Rajendra Pawar").rating(4.5).studentCount(1900).duration("70h").price(1599L)
+                .type(Course.CourseType.EXTERNAL).category(ITI_CATEGORY)
+                .skills(List.of("Wiring", "Circuit Testing", "High-Voltage Safety", "Battery Management Systems"))
+                .targetRoles(List.of("Automotive Electrician", "EV Mechanic"))
+                .build(),
+
+            Course.builder()
+                .title("EV Industrial Safety & High-Voltage PPE")
+                .instructor("Meera Kulkarni").rating(4.7).studentCount(3100).duration("12h").price(null)
+                .type(Course.CourseType.INSTITUTE).category(ITI_CATEGORY)
+                .skills(List.of("Workplace Safety", "High-Voltage PPE", "Hazard Identification", "First Aid Basics"))
+                .targetRoles(List.of("EV Mechanic", "EV Battery Technician", "EV Charging Station Technician", "Automotive Electrician"))
+                .build()
+        );
     }
 }

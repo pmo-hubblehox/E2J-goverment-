@@ -3,7 +3,7 @@ import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Load
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
-import { ROLE_AREAS } from '../../constants/roleAreas';
+import { ROLE_AREAS, ROLE_GROUPS } from '../../constants/roleAreas';
 
 const PRIMARY = '#3F41D1';
 const BORDER  = '#E2E8F0';
@@ -386,8 +386,6 @@ export default function MyAspirationPage() {
 
   const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  const visibleRoles = (showAllRoles ? ROLE_AREAS : ROLE_AREAS.slice(0, 12))
-    .filter(r => r.toLowerCase().includes(roleSearch.toLowerCase()));
   const stepNum: Record<FlowStep, number> = { goal: 1, profile: 2, roles: 3 };
 
   /* ─── LOADING ─── */
@@ -634,15 +632,25 @@ export default function MyAspirationPage() {
               <input value={roleSearch} onChange={e => setRoleSearch(e.target.value)} placeholder="Search roles…"
                 style={{ width: '100%', paddingLeft: '36px', paddingRight: '12px', paddingTop: '9px', paddingBottom: '9px', border: `1px solid ${BORDER}`, borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-              {visibleRoles.map(r => (
-                <button key={r} onClick={() => setSelectedRole(selectedRole === r ? '' : r)}
-                  style={{ padding: '7px 14px', borderRadius: '20px', border: `1.5px solid ${selectedRole === r ? PRIMARY : '#CBD5E1'}`, background: selectedRole === r ? PRIMARY : '#fff', color: selectedRole === r ? '#fff' : '#475569', fontSize: '12px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  {selectedRole === r && <Check size={11} strokeWidth={3} />}
-                  {r}
-                </button>
-              ))}
-            </div>
+            {ROLE_GROUPS.map(group => {
+              const filtered = group.roles.filter(r => r.toLowerCase().includes(roleSearch.toLowerCase()));
+              if (filtered.length === 0) return null;
+              const visible = showAllRoles ? filtered : filtered.slice(0, 12);
+              return (
+                <div key={group.category} style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>{group.category}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {visible.map(r => (
+                      <button key={r} onClick={() => setSelectedRole(selectedRole === r ? '' : r)}
+                        style={{ padding: '7px 14px', borderRadius: '20px', border: `1.5px solid ${selectedRole === r ? PRIMARY : '#CBD5E1'}`, background: selectedRole === r ? PRIMARY : '#fff', color: selectedRole === r ? '#fff' : '#475569', fontSize: '12px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        {selectedRole === r && <Check size={11} strokeWidth={3} />}
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
             {!showAllRoles && ROLE_AREAS.filter(r => r.toLowerCase().includes(roleSearch.toLowerCase())).length > 12 && (
               <button onClick={() => setShowAllRoles(true)} style={{ fontSize: '12px', color: PRIMARY, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>+ View More</button>
             )}

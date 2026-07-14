@@ -26,6 +26,9 @@ public class StudentAspiration {
     @Column(nullable = false)
     private String roleArea;
 
+    /** "TECH" or "ITI" — which career vertical roleArea belongs to; null for legacy rows (treated as TECH). */
+    private String track;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "aspiration_skills", joinColumns = @JoinColumn(name = "aspiration_id"))
     @Column(name = "skill")

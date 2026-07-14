@@ -6,6 +6,7 @@ import com.hubblehox.e2j.exception.AppException;
 import com.hubblehox.e2j.repository.*;
 import com.hubblehox.e2j.service.CourseRecommendationService;
 import com.hubblehox.e2j.service.InterviewService;
+import com.hubblehox.e2j.service.PsychometricService;
 import com.hubblehox.e2j.service.YouTubeCourseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -147,10 +148,13 @@ public class StudentController {
             @RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<String> skills = body.containsKey("skills") ? (List<String>) body.get("skills") : List.of();
+        String roleArea = (String) body.get("roleArea");
+        String track = body.containsKey("track") ? (String) body.get("track") : PsychometricService.classifyTrack(roleArea);
         StudentAspiration asp = StudentAspiration.builder()
                 .student(getStudent(user))
                 .goal(body.containsKey("goal") ? (String) body.get("goal") : null)
-                .roleArea((String) body.get("roleArea"))
+                .roleArea(roleArea)
+                .track(track)
                 .skills(skills)
                 .build();
         return ResponseEntity.ok(ApiResponse.ok(aspirationRepo.save(asp), "Aspiration saved"));
@@ -164,7 +168,11 @@ public class StudentController {
             @RequestBody Map<String, Object> body) {
         StudentAspiration asp = aspirationRepo.findByIdAndStudent(id, getStudent(user))
                 .orElseThrow(() -> new AppException("Aspiration not found", HttpStatus.NOT_FOUND));
-        if (body.containsKey("roleArea")) asp.setRoleArea((String) body.get("roleArea"));
+        if (body.containsKey("roleArea")) {
+            String roleArea = (String) body.get("roleArea");
+            asp.setRoleArea(roleArea);
+            asp.setTrack(PsychometricService.classifyTrack(roleArea));
+        }
         return ResponseEntity.ok(ApiResponse.ok(aspirationRepo.save(asp), "Updated"));
     }
 

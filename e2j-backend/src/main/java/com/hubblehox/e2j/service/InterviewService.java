@@ -267,11 +267,15 @@ public class InterviewService {
 
         String language = (request != null && request.getLanguage() != null) ? request.getLanguage() : "English";
 
-        // use selected role from request, fallback to profile
+        // use selected role from request, fallback to the student's latest aspiration, then a generic default
         StudentProfile profile = profileRepo.findByStudent(student).orElse(null);
         String role = (request != null && request.getSelectedRole() != null && !request.getSelectedRole().isBlank())
                 ? request.getSelectedRole()
-                : "Software Engineer";
+                : aspirationRepo.findByStudentOrderByCreatedAtDesc(student).stream()
+                    .map(StudentAspiration::getRoleArea)
+                    .filter(r -> r != null && !r.isBlank())
+                    .findFirst()
+                    .orElse("Software Engineer");
         String skills = "General";
         String expLevel = "Fresher";
         Integer difficultyLevel = (request != null && request.getDifficultyLevel() != null) ? request.getDifficultyLevel() : 5;

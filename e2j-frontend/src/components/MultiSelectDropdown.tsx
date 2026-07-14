@@ -9,9 +9,11 @@ interface Props {
   primaryColor: string;
   borderColor: string;
   textColor: string;
+  /** Optional section headers — when provided, options are rendered grouped instead of as one flat list. */
+  groups?: { category: string; roles: string[] }[];
 }
 
-export default function MultiSelectDropdown({ options, selected, onChange, placeholder, primaryColor, borderColor, textColor }: Props) {
+export default function MultiSelectDropdown({ options, selected, onChange, placeholder, primaryColor, borderColor, textColor, groups }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,18 +39,35 @@ export default function MultiSelectDropdown({ options, selected, onChange, place
         <ChevronDown size={14} color="#94A3B8" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: `1px solid ${borderColor}`, borderRadius: '8px', maxHeight: '220px', overflowY: 'auto', zIndex: 30, boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}>
-          {options.map(opt => {
-            const isSelected = selected.includes(opt);
-            return (
-              <label key={opt}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: textColor, cursor: 'pointer', background: isSelected ? '#EEF2FF' : 'transparent' }}>
-                <input type="checkbox" checked={isSelected} onChange={() => toggle(opt)}
-                  style={{ accentColor: primaryColor, width: '14px', height: '14px', cursor: 'pointer' }} />
-                {opt}
-              </label>
-            );
-          })}
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: `1px solid ${borderColor}`, borderRadius: '8px', maxHeight: '260px', overflowY: 'auto', zIndex: 30, boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}>
+          {groups
+            ? groups.map(group => (
+                <div key={group.category}>
+                  <div style={{ padding: '8px 14px 4px', fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{group.category}</div>
+                  {group.roles.map(opt => {
+                    const isSelected = selected.includes(opt);
+                    return (
+                      <label key={opt}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: textColor, cursor: 'pointer', background: isSelected ? '#EEF2FF' : 'transparent' }}>
+                        <input type="checkbox" checked={isSelected} onChange={() => toggle(opt)}
+                          style={{ accentColor: primaryColor, width: '14px', height: '14px', cursor: 'pointer' }} />
+                        {opt}
+                      </label>
+                    );
+                  })}
+                </div>
+              ))
+            : options.map(opt => {
+                const isSelected = selected.includes(opt);
+                return (
+                  <label key={opt}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: textColor, cursor: 'pointer', background: isSelected ? '#EEF2FF' : 'transparent' }}>
+                    <input type="checkbox" checked={isSelected} onChange={() => toggle(opt)}
+                      style={{ accentColor: primaryColor, width: '14px', height: '14px', cursor: 'pointer' }} />
+                    {opt}
+                  </label>
+                );
+              })}
         </div>
       )}
     </div>

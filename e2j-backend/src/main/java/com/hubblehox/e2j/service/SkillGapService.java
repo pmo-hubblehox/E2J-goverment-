@@ -75,10 +75,18 @@ public class SkillGapService {
         log.info("[SkillGap] Resolved resume URL | url={}", resolvedResumeUrl);
 
         List<StudentEducation> educations = educationRepo.findByStudentOrderByCreatedAtAsc(student);
-        String curriculum = educations.isEmpty() ? "Computer Science"
-                : (educations.get(educations.size() - 1).getMajorSpecialization() != null
-                ? educations.get(educations.size() - 1).getMajorSpecialization()
-                : "Computer Science");
+        boolean isIti = "ITI".equals(PsychometricService.classifyTrack(targetRole));
+        String curriculum;
+        if (isIti) {
+            // Vocational trade analysis must not be anchored to an unrelated stored academic major
+            // (e.g. a leftover B.Tech/B.E. specialization) — always use the trade-specific curriculum context.
+            curriculum = "ITI Vocational Training — Electric Vehicle (EV) Trade";
+        } else {
+            curriculum = educations.isEmpty() ? "Computer Science"
+                    : (educations.get(educations.size() - 1).getMajorSpecialization() != null
+                    ? educations.get(educations.size() - 1).getMajorSpecialization()
+                    : "Computer Science");
+        }
 
         log.info("[SkillGap] Curriculum resolved | curriculum={}", curriculum);
 
@@ -119,10 +127,13 @@ public class SkillGapService {
             log.info("[SkillGap] PDF text extracted | chars={} | truncating={}", resumeText.length(), resumeText.length() > 4000);
             String truncatedResume = resumeText.length() > 4000 ? resumeText.substring(0, 4000) : resumeText;
 
+            String curriculumContext = isIti
+                ? "an ITI (Industrial Training Institute) vocational trade program"
+                : "a curriculum at Indian universities";
             String prompt = String.format("""
-                You are an expert career analyst with deep knowledge of the current job market and university curricula in India.
+                You are an expert career analyst with deep knowledge of the current job market and %s in India.
 
-                Student's academic background (curriculum/major): %s
+                Student's academic/training background (curriculum/major): %s
                 Target job role: %s
 
                 Resume text:
@@ -130,8 +141,9 @@ public class SkillGapService {
 
                 Using your knowledge of:
                 - What skills are currently demanded in the job market for "%s"
-                - What topics are typically taught in a "%s" curriculum at Indian universities
+                - What topics are typically taught in "%s" for %s
                 - What skills the student already has based on their resume
+                - IMPORTANT: If the target role is a hands-on vocational/ITI trade role, focus ONLY on trade-relevant technical, knowledge, and soft skill clusters. Do NOT include unrelated software/programming/data-science clusters unless the target role genuinely requires them.
 
                 Return ONLY this JSON (no markdown, no explanation, no extra keys):
                 {
@@ -168,7 +180,7 @@ public class SkillGapService {
                 - studentHasSkill: true if the resume clearly shows this skill, false if it is a gap
                 - Only include course recommendations for Technical clusters where gaps exist
                 - Use real, well-known course URLs (Coursera, YouTube, edX, Udemy) — if unsure use a search URL like https://www.coursera.org/search?query=<skill>
-                """, curriculum, targetRole, truncatedResume, targetRole, curriculum);
+                """, curriculumContext, curriculum, targetRole, truncatedResume, targetRole, curriculum, curriculumContext);
 
             log.info("[SkillGap] Sending prompt to Groq | targetRole={} | curriculum={}", targetRole, curriculum);
             String resultJson = groqService.chat(List.of(

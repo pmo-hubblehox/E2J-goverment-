@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, X, Users } from 'lucide-react';
 import api from '../../services/api';
-import { ROLE_AREAS } from '../../constants/roleAreas';
+import { ROLE_AREAS, ROLE_GROUPS } from '../../constants/roleAreas';
 import MultiSelectDropdown from '../../components/MultiSelectDropdown';
 
 const PRIMARY = '#3F41D1';
@@ -440,7 +440,7 @@ export default function WorkshopsPage() {
                   style={{ ...inputStyle, height: 'auto', padding: '10px 14px', resize: 'vertical' as const }} />
               </Field>
               <Field label="Target Role(s)">
-                <MultiSelectDropdown options={ROLE_AREAS} selected={targetRoles} onChange={setTargetRoles}
+                <MultiSelectDropdown options={ROLE_AREAS} groups={ROLE_GROUPS} selected={targetRoles} onChange={setTargetRoles}
                   placeholder="Select target role(s)" primaryColor={PRIMARY} borderColor={BORDER} textColor={TEXT} />
               </Field>
               <Field label="Trainer (from Faculty)">

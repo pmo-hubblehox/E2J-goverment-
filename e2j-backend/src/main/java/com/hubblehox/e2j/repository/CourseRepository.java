@@ -10,6 +10,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findByType(Course.CourseType type);
 
+    boolean existsByCategory(String category);
+
     @Query("SELECT c FROM Course c ORDER BY c.rating DESC")
     List<Course> findAllByRatingDesc();
 }
