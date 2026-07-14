@@ -422,7 +422,7 @@ public class ExcelService {
     }
 
     // ── Bulk upload: SMEs ─────────────────────────────────────────────────────
-    // Columns: Name | Expertise Areas (comma-sep) | Bio | Available From | Available To | Days (comma-sep) | Mode | Location / Meeting Link
+    // Columns: Name | Email | Expertise Areas (comma-sep) | Bio | Available From | Available To | Days (comma-sep) | Mode | Location / Meeting Link
 
     public int bulkUploadSmes(MultipartFile file, IndustryPartner partner) throws IOException {
         int count = 0;
@@ -433,26 +433,28 @@ public class ExcelService {
                 if (row == null) continue;
                 String name = str(row.getCell(0));
                 if (name.isBlank()) continue;
-                String expertiseRaw = str(row.getCell(1));
+                String email = str(row.getCell(1));
+                String expertiseRaw = str(row.getCell(2));
                 String expertiseJson = "[" + splitCsv(expertiseRaw).stream()
                         .map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
                         .reduce((a, b) -> a + "," + b).orElse("") + "]";
-                String daysRaw = str(row.getCell(5));
+                String daysRaw = str(row.getCell(6));
                 String daysJson = "[" + splitCsv(daysRaw).stream()
                         .map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
                         .reduce((a, b) -> a + "," + b).orElse("") + "]";
-                String fromStr = str(row.getCell(3));
-                String toStr   = str(row.getCell(4));
+                String fromStr = str(row.getCell(4));
+                String toStr   = str(row.getCell(5));
                 LocalDate from = null, to = null;
                 try { if (!fromStr.isBlank()) from = LocalDate.parse(fromStr); } catch (Exception ignored) {}
                 try { if (!toStr.isBlank())   to   = LocalDate.parse(toStr);   } catch (Exception ignored) {}
-                String mode = str(row.getCell(6));
-                String locOrLink = str(row.getCell(7));
+                String mode = str(row.getCell(7));
+                String locOrLink = str(row.getCell(8));
                 IndustrySme sme = IndustrySme.builder()
                         .partner(partner)
                         .smeName(name)
+                        .email(email.isBlank() ? null : email)
                         .expertiseArea(expertiseJson)
-                        .bio(str(row.getCell(2)))
+                        .bio(str(row.getCell(3)))
                         .availableFrom(from)
                         .availableTo(to)
                         .days(daysJson)
@@ -469,15 +471,16 @@ public class ExcelService {
     }
 
     public byte[] sampleSmesExcel() throws IOException {
-        String[] headers = { "Name", "Expertise Areas (comma-separated)", "Bio", "Available From (YYYY-MM-DD)", "Available To (YYYY-MM-DD)", "Days (comma-separated)", "Mode (Online/Offline/Both)", "Location / Meeting Link" };
+        String[] headers = { "Name", "Email", "Expertise Areas (comma-separated)", "Bio", "Available From (YYYY-MM-DD)", "Available To (YYYY-MM-DD)", "Days (comma-separated)", "Mode (Online/Offline/Both)", "Location / Meeting Link" };
         Object[][] data = {
-            { "Rajesh Sharma",   "Java, Spring Boot, Microservices", "10+ yrs in backend dev", "2025-08-01", "2025-12-31", "Monday,Wednesday,Friday", "Online",  "https://meet.google.com/abc" },
-            { "Priya Nair",      "Data Science, Python, ML",         "ML engineer at TCS",     "2025-09-01", "2025-11-30", "Tuesday,Thursday",        "Offline", "TCS Bangalore Campus" },
-            { "Amit Verma",      "UI/UX, Figma, React",              "Product designer 8 yrs", "2025-08-15", "2025-12-15", "Monday,Friday",           "Both",    "https://teams.microsoft.com/xyz" },
+            { "Rajesh Sharma",   "rajesh.sharma@example.com", "Java, Spring Boot, Microservices", "10+ yrs in backend dev", "2025-08-01", "2025-12-31", "Monday,Wednesday,Friday", "Online",  "https://meet.google.com/abc" },
+            { "Priya Nair",      "priya.nair@example.com",    "Data Science, Python, ML",         "ML engineer at TCS",     "2025-09-01", "2025-11-30", "Tuesday,Thursday",        "Offline", "TCS Bangalore Campus" },
+            { "Amit Verma",      "amit.verma@example.com",    "UI/UX, Figma, React",              "Product designer 8 yrs", "2025-08-15", "2025-12-15", "Monday,Friday",           "Both",    "https://teams.microsoft.com/xyz" },
         };
         String[] ih = { "Column", "Description" };
         String[][] id = {
             { "Name",              "SME full name (required)" },
+            { "Email",              "Used to create the SME's workshop-trainer login" },
             { "Expertise Areas",   "Comma-separated skill areas" },
             { "Bio",               "Short bio / background" },
             { "Available From",    "Start date in YYYY-MM-DD" },

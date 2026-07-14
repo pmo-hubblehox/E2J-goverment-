@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { Plus, Calendar, List, X, Star, ExternalLink, ChevronLeft, ChevronRight, Pencil, FileText, User, Loader2, Briefcase, GraduationCap, Award, MapPin, Clock } from 'lucide-react';
+import { Plus, Calendar, List, X, Star, ExternalLink, ChevronLeft, ChevronRight, Pencil, FileText, Loader2, Briefcase, GraduationCap, Award, MapPin, Clock } from 'lucide-react';
 import PsychometricReportView from '../../components/PsychometricReportView';
 
 
@@ -46,8 +46,8 @@ interface StudentBooking {
   questionnaire?: Record<string, string>;
 }
 
-// ── Student Profile Modal ────────────────────────────────────────────────────
-function StudentProfileModal({ booking, onClose }: { booking: StudentBooking; onClose: () => void }) {
+// ── Student Profile Tab content (used inside ReportModal) ───────────────────
+function StudentProfileTab({ booking }: { booking: StudentBooking }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,129 +64,122 @@ function StudentProfileModal({ booking, onClose }: { booking: StudentBooking; on
   const city = profile?.presentAddress?.city;
   const state = profile?.presentAddress?.state;
 
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '40px', color: SUB, fontSize: '13px' }}>
+      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading profile…
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+  if (!profile) return (
+    <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>Could not load this student's profile.</div>
+  );
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: '#F8FAFC', borderRadius: '16px', width: '100%', maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', color: SUB, fontSize: '13px', padding: '20px 24px 0' }}>
-          <ChevronLeft size={18} /> Close
-        </button>
-
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '40px', color: SUB, fontSize: '13px' }}>
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading profile…
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div>
+      {/* Hero card */}
+      <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '16px' }}>
+        <div style={{ height: '100px', background: 'linear-gradient(135deg,#667eea,#764ba2)' }} />
+        <div style={{ padding: '0 24px 24px', position: 'relative' }}>
+          <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, color: '#fff', position: 'absolute', top: '-36px' }}>
+            {profile.photoUrl ? <img src={profile.photoUrl} alt={name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
           </div>
-        ) : !profile ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>Could not load this student's profile.</div>
-        ) : (
-          <div style={{ padding: '20px 24px 24px' }}>
-            {/* Hero card */}
-            <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', overflow: 'hidden', marginBottom: '16px' }}>
-              <div style={{ height: '100px', background: 'linear-gradient(135deg,#667eea,#764ba2)' }} />
-              <div style={{ padding: '0 24px 24px', position: 'relative' }}>
-                <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#667eea,#764ba2)', border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, color: '#fff', position: 'absolute', top: '-36px' }}>
-                  {profile.photoUrl ? <img src={profile.photoUrl} alt={name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ paddingTop: '44px' }}>
-                  <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 700, color: TEXT }}>{name}</h2>
-                  <p style={{ margin: '0 0 6px', fontSize: '13px', color: SUB }}>{profile.email ?? booking.studentEmail}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    {(city || state) && (
-                      <span style={{ fontSize: '12px', color: SUB, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <MapPin size={12} /> {[city, state].filter(Boolean).join(', ')}
-                      </span>
-                    )}
-                    {profile.experienceCategory && (
-                      <span style={{ fontSize: '12px', color: SUB, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <Briefcase size={12} /> {profile.experienceCategory}
-                        {(profile.totalExpYears != null || profile.totalExpMonths != null) ? ` · ${profile.totalExpYears ?? 0} yr ${profile.totalExpMonths ?? 0} mo` : ''}
-                      </span>
-                    )}
-                    {profile.linkedinUrl && (
-                      <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: '12px', color: '#0A66C2', display: 'flex', alignItems: 'center', gap: '3px', textDecoration: 'none' }}>
-                        <ExternalLink size={12} /> LinkedIn
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div style={{ paddingTop: '44px' }}>
+            <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 700, color: TEXT }}>{name}</h2>
+            <p style={{ margin: '0 0 6px', fontSize: '13px', color: SUB }}>{profile.email ?? booking.studentEmail}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {(city || state) && (
+                <span style={{ fontSize: '12px', color: SUB, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <MapPin size={12} /> {[city, state].filter(Boolean).join(', ')}
+                </span>
+              )}
+              {profile.experienceCategory && (
+                <span style={{ fontSize: '12px', color: SUB, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Briefcase size={12} /> {profile.experienceCategory}
+                  {(profile.totalExpYears != null || profile.totalExpMonths != null) ? ` · ${profile.totalExpYears ?? 0} yr ${profile.totalExpMonths ?? 0} mo` : ''}
+                </span>
+              )}
+              {profile.linkedinUrl && (
+                <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '12px', color: '#0A66C2', display: 'flex', alignItems: 'center', gap: '3px', textDecoration: 'none' }}>
+                  <ExternalLink size={12} /> LinkedIn
+                </a>
+              )}
             </div>
-
-            {/* Skills */}
-            {profile.skills?.length > 0 && (
-              <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
-                <h4 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 700, color: TEXT }}>Skills</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {profile.skills.map((s: string) => (
-                    <span key={s} style={{ fontSize: '12px', background: '#EEF2FF', color: PRIMARY, padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>{s}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Work Experience */}
-            {(profile.experienceCategory || profile.workExperiences?.length > 0) && (
-              <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
-                <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Briefcase size={14} color={PRIMARY} /> Work Experience
-                </h4>
-                {profile.experienceCategory && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#EEF2FF', borderRadius: '8px', marginBottom: profile.workExperiences?.length > 0 ? '12px' : 0 }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY }}>{profile.experienceCategory}</span>
-                    {(profile.totalExpYears != null || profile.totalExpMonths != null) && (
-                      <span style={{ fontSize: '12px', color: SUB }}>· {profile.totalExpYears ?? 0} yr {profile.totalExpMonths ?? 0} mo</span>
-                    )}
-                  </div>
-                )}
-                {profile.workExperiences?.map((w: any, i: number) => (
-                  <div key={i} style={{ paddingBottom: i < profile.workExperiences.length - 1 ? '14px' : 0, marginBottom: i < profile.workExperiences.length - 1 ? '14px' : 0, borderBottom: i < profile.workExperiences.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                    <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{w.companyName}</p>
-                    <p style={{ margin: '0 0 2px', fontSize: '12px', color: SUB }}>{w.employmentType}{w.location ? ` · ${w.location}` : ''}</p>
-                    <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={10} /> {w.fromDate} – {w.toDate ?? 'Present'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Education */}
-            {profile.educations?.length > 0 && (
-              <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
-                <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <GraduationCap size={14} color={PRIMARY} /> Education
-                </h4>
-                {profile.educations.map((e: any, i: number) => (
-                  <div key={i} style={{ paddingBottom: i < profile.educations.length - 1 ? '14px' : 0, marginBottom: i < profile.educations.length - 1 ? '14px' : 0, borderBottom: i < profile.educations.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                    <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{e.degree}{e.majorSpecialization ? ` — ${e.majorSpecialization}` : ''}</p>
-                    <p style={{ margin: '0 0 2px', fontSize: '12px', color: SUB }}>{e.schoolUniversity}</p>
-                    {e.yearOfPassing && <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8' }}>{e.yearOfPassing}{e.percentageCgpa ? ` · ${e.percentageCgpa}%` : ''}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Certifications */}
-            {profile.certifications?.length > 0 && (
-              <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
-                <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Award size={14} color={PRIMARY} /> Certifications
-                </h4>
-                {profile.certifications.map((c: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: i < profile.certifications.length - 1 ? '12px' : 0, marginBottom: i < profile.certifications.length - 1 ? '12px' : 0, borderBottom: i < profile.certifications.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                    <div>
-                      <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{c.certificationName}</p>
-                      <p style={{ margin: 0, fontSize: '12px', color: SUB }}>{c.awardingInstitute}</p>
-                    </div>
-                    {c.validTill && <span style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>Valid till {c.validTill}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Skills */}
+      {profile.skills?.length > 0 && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
+          <h4 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 700, color: TEXT }}>Skills</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {profile.skills.map((s: string) => (
+              <span key={s} style={{ fontSize: '12px', background: '#EEF2FF', color: PRIMARY, padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>{s}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Work Experience */}
+      {(profile.experienceCategory || profile.workExperiences?.length > 0) && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
+          <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Briefcase size={14} color={PRIMARY} /> Work Experience
+          </h4>
+          {profile.experienceCategory && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#EEF2FF', borderRadius: '8px', marginBottom: profile.workExperiences?.length > 0 ? '12px' : 0 }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: PRIMARY }}>{profile.experienceCategory}</span>
+              {(profile.totalExpYears != null || profile.totalExpMonths != null) && (
+                <span style={{ fontSize: '12px', color: SUB }}>· {profile.totalExpYears ?? 0} yr {profile.totalExpMonths ?? 0} mo</span>
+              )}
+            </div>
+          )}
+          {profile.workExperiences?.map((w: any, i: number) => (
+            <div key={i} style={{ paddingBottom: i < profile.workExperiences.length - 1 ? '14px' : 0, marginBottom: i < profile.workExperiences.length - 1 ? '14px' : 0, borderBottom: i < profile.workExperiences.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+              <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{w.companyName}</p>
+              <p style={{ margin: '0 0 2px', fontSize: '12px', color: SUB }}>{w.employmentType}{w.location ? ` · ${w.location}` : ''}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Clock size={10} /> {w.fromDate} – {w.toDate ?? 'Present'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Education */}
+      {profile.educations?.length > 0 && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
+          <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <GraduationCap size={14} color={PRIMARY} /> Education
+          </h4>
+          {profile.educations.map((e: any, i: number) => (
+            <div key={i} style={{ paddingBottom: i < profile.educations.length - 1 ? '14px' : 0, marginBottom: i < profile.educations.length - 1 ? '14px' : 0, borderBottom: i < profile.educations.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+              <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{e.degree}{e.majorSpecialization ? ` — ${e.majorSpecialization}` : ''}</p>
+              <p style={{ margin: '0 0 2px', fontSize: '12px', color: SUB }}>{e.schoolUniversity}</p>
+              {e.yearOfPassing && <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8' }}>{e.yearOfPassing}{e.percentageCgpa ? ` · ${e.percentageCgpa}%` : ''}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Certifications */}
+      {profile.certifications?.length > 0 && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px 20px', marginBottom: '12px' }}>
+          <h4 style={{ margin: '0 0 14px', fontSize: '13px', fontWeight: 700, color: TEXT, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Award size={14} color={PRIMARY} /> Certifications
+          </h4>
+          {profile.certifications.map((c: any, i: number) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: i < profile.certifications.length - 1 ? '12px' : 0, marginBottom: i < profile.certifications.length - 1 ? '12px' : 0, borderBottom: i < profile.certifications.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
+              <div>
+                <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: 600, color: TEXT }}>{c.certificationName}</p>
+                <p style={{ margin: 0, fontSize: '12px', color: SUB }}>{c.awardingInstitute}</p>
+              </div>
+              {c.validTill && <span style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>Valid till {c.validTill}</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -194,7 +187,7 @@ function StudentProfileModal({ booking, onClose }: { booking: StudentBooking; on
 // ── Combined Report Modal (3 tabs) ───────────────────────────────────────────
 function ReportModal({ booking, onClose, onSaved }: { booking: StudentBooking; onClose: () => void; onSaved: () => void }) {
   const TEXT = '#1E293B', SUB = '#64748B', BORDER = '#E2E8F0', PRIMARY = '#4F46E5';
-  const [activeTab, setActiveTab] = useState<'questionnaire' | 'psychometric' | 'feedback'>('questionnaire');
+  const [activeTab, setActiveTab] = useState<'profile' | 'questionnaire' | 'psychometric' | 'feedback'>('profile');
 
   const alreadySaved = !!(booking.psychometricReport?.feedbackKeyObservations || booking.psychometricReport?.feedbackActionItems || booking.psychometricReport?.counsellorComment);
 
@@ -254,6 +247,7 @@ function ReportModal({ booking, onClose, onSaved }: { booking: StudentBooking; o
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '4px', padding: '16px 28px 0', borderBottom: `2px solid ${BORDER}`, flexShrink: 0 }}>
           {([
+            { key: 'profile',       label: '👤 Profile', show: true },
             { key: 'questionnaire', label: '📋 Questionnaire', show: !!(booking.questionnaire && Object.values(booking.questionnaire).some(v => v)) },
             { key: 'psychometric',  label: '🧠 Psychometric Report', show: !!booking.psychometricReport },
             { key: 'feedback',      label: '💬 Counsellor Feedback', show: true },
@@ -267,6 +261,9 @@ function ReportModal({ booking, onClose, onSaved }: { booking: StudentBooking; o
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 28px' }}>
+
+          {/* TAB — Profile */}
+          {activeTab === 'profile' && <StudentProfileTab booking={booking} />}
 
           {/* TAB 1 — Questionnaire */}
           {activeTab === 'questionnaire' && (
@@ -708,7 +705,6 @@ export default function BookedSessionPage() {
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [completingId, setCompletingId] = useState<number | null>(null);
-  const [profileTarget, setProfileTarget] = useState<StudentBooking | null>(null);
 
   const loadSessions = useCallback(() => {
     api.get('/counsellor/sessions')
@@ -848,10 +844,6 @@ export default function BookedSessionPage() {
                             <FileText size={11} /> Report
                           </button>
                         )}
-                        <button onClick={() => setProfileTarget(b)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#F1F5F9', border: 'none', borderRadius: '6px', color: '#475569', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          <User size={11} /> Profile
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1005,7 +997,6 @@ export default function BookedSessionPage() {
 
       {showModal && <AddAvailabilityModal onClose={() => setShowModal(false)} onSaved={reload} />}
       {viewingReport && <ReportModal booking={viewingReport} onClose={() => setViewingReport(null)} onSaved={loadBookings} />}
-      {profileTarget && <StudentProfileModal booking={profileTarget} onClose={() => setProfileTarget(null)} />}
       {editingSession && (
         <EditAvailabilityModal
           session={editingSession}
