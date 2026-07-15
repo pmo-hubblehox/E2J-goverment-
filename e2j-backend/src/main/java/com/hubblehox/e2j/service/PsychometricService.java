@@ -107,7 +107,14 @@ public class PsychometricService {
     // ── Get 30 adaptive questions (5 per RIASEC category) ────────────────────
 
     public List<Map<String, Object>> getQuestions(Student student) {
-        String profileType = detectProfileType(student);
+        return getQuestions(student, null);
+    }
+
+    /** trackOverride ("TECH"/"ITI"), when provided, takes priority over education-based detection — used when the student has explicitly chosen a track before any education-derived signal is relevant. */
+    public List<Map<String, Object>> getQuestions(Student student, String trackOverride) {
+        String profileType = "ITI".equalsIgnoreCase(trackOverride) ? "ITI"
+                : "TECH".equalsIgnoreCase(trackOverride) ? "TECH"
+                : detectProfileType(student);
         List<PsychometricQuestion> pool = questionRepo.findByProfileType(profileType);
 
         // Group by category, pick up to 5 per category

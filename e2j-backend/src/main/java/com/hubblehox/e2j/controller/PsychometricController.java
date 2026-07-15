@@ -27,12 +27,13 @@ public class PsychometricController {
             .orElseThrow(() -> new AppException("Student not found", HttpStatus.NOT_FOUND));
     }
 
-    /** Get 30 adaptive questions for the logged-in student */
+    /** Get 30 adaptive questions for the logged-in student. Optional "track" param (TECH/ITI) overrides education-based detection — used by the Explore flow where the student picks a track before any roleArea is known. */
     @GetMapping("/questions")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getQuestions(
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String track) {
         Student student = getStudent(user);
-        return ResponseEntity.ok(ApiResponse.ok(psychometricService.getQuestions(student)));
+        return ResponseEntity.ok(ApiResponse.ok(psychometricService.getQuestions(student, track)));
     }
 
     /**

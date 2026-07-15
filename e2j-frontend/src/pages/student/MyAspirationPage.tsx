@@ -14,7 +14,7 @@ const BG      = '#F8F9FA';
 type View = 'list' | 'wizard' | 'detail';
 type FlowStep = 'goal' | 'profile' | 'roles';
 // Explore-specific sub-steps
-type ExploreStep = 'payment' | 'test' | 'report' | 'consult';
+type ExploreStep = 'track' | 'payment' | 'test' | 'report' | 'consult';
 
 const CATEGORY_NAMES: Record<string, string> = {
   R: 'Realistic', I: 'Investigative', A: 'Artistic',
@@ -136,6 +136,7 @@ export default function MyAspirationPage() {
 
   // ── Explore flow state ────────────────────────────────────────────────────
   const [exploreStep, setExploreStep]   = useState<ExploreStep>('payment');
+  const [exploreTrack, setExploreTrack] = useState<'TECH' | 'ITI' | ''>('ITI');
   const [paying, setPaying]             = useState(false);
   const [questions, setQuestions]       = useState<any[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState(false);
@@ -324,7 +325,7 @@ export default function MyAspirationPage() {
   };
 
   const resetExplore = () => {
-    setExploreStep('payment'); setQuestions([]); setCurrentQ(0);
+    setExploreStep('payment'); setExploreTrack('ITI'); setQuestions([]); setCurrentQ(0);
     setAnswers({}); setTimeLeft(15 * 60); setPsychReport(null);
     setSavedAspirationId(null); setPaying(false);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -334,7 +335,7 @@ export default function MyAspirationPage() {
     setPaying(true);
     setQuestionsLoading(true);
     try {
-      const res = await api.get('/student/psychometric/questions');
+      const res = await api.get('/student/psychometric/questions', { params: exploreTrack ? { track: exploreTrack } : {} });
       const qs = res.data?.data ?? [];
       setQuestions(qs);
       setExploreStep('test');
@@ -363,7 +364,7 @@ export default function MyAspirationPage() {
       // Save aspiration first
       let aspirationId: number | null = null;
       try {
-        const aspRes = await api.post('/student/aspiration', { goal: 'explore', roleArea: 'Exploring Interests', skills: [] });
+        const aspRes = await api.post('/student/aspiration', { goal: 'explore', roleArea: 'Exploring Interests', skills: [], track: exploreTrack || undefined });
         aspirationId = aspRes.data?.data?.id ?? null;
         setSavedAspirationId(aspirationId);
       } catch { /* non-fatal */ }
@@ -409,7 +410,7 @@ export default function MyAspirationPage() {
       {/* Step indicator always centred in 680px band */}
       <div style={{ maxWidth: '680px', margin: '0 auto' }}>
         {(flowStep as string) === 'explore'
-          ? <StepIndicator current={{ payment: 2, test: 3, report: 4, consult: 4 }[exploreStep] ?? 2} labels={EXPLORE_STEP_LABELS} />
+          ? <StepIndicator current={{ track: 2, payment: 2, test: 3, report: 4, consult: 4 }[exploreStep] ?? 2} labels={EXPLORE_STEP_LABELS} />
           : <StepIndicator current={stepNum[flowStep]} />
         }
       </div>
@@ -681,6 +682,36 @@ export default function MyAspirationPage() {
         {/* ── Explore Flow ─────────────────────────────────────────────────── */}
         {(flowStep as string) === 'explore' && (
           <>
+            {/* TRACK */}
+            {exploreStep === 'track' && (
+              <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: 700, color: TEXT, margin: '0 0 8px', textAlign: 'center' }}>Which career track fits you?</h2>
+                <p style={{ fontSize: '13px', color: SUB, margin: '0 0 24px', textAlign: 'center', lineHeight: 1.6 }}>
+                  This shapes the questions you'll be asked and the careers we recommend.
+                </p>
+                <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {([
+                    // { id: 'TECH', title: 'Engineering & Tech', desc: 'Software, data, and other tech-driven careers.' },
+                    { id: 'ITI',  title: 'ITI & Vocational (EV)', desc: 'Hands-on EV trades — mechanic, battery, charging, and more.' },
+                  ] as const).map(t => (
+                    <button key={t.id} onClick={() => setExploreTrack(t.id)}
+                      style={{ width: '220px', minHeight: '140px', padding: '22px 18px', borderRadius: '16px', border: `2px solid ${exploreTrack === t.id ? PRIMARY : BORDER}`, background: exploreTrack === t.id ? '#EEEEFF' : '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: TEXT }}>{t.title}</span>
+                      <span style={{ fontSize: '12px', color: SUB, lineHeight: 1.4 }}>{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
+                  <button onClick={() => { resetExplore(); setFlowStep('goal'); }}
+                    style={{ padding: '9px 20px', borderRadius: '8px', border: `1px solid ${BORDER}`, background: '#fff', color: SUB, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                  <button disabled={!exploreTrack} onClick={() => setExploreStep('payment')}
+                    style={{ padding: '9px 24px', borderRadius: '8px', border: 'none', background: exploreTrack ? PRIMARY : BORDER, color: exploreTrack ? '#fff' : '#94A3B8', fontSize: '13px', fontWeight: 600, cursor: exploreTrack ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    Next <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* PAYMENT */}
             {exploreStep === 'payment' && (
               <div style={{ maxWidth: '460px', margin: '0 auto' }}>
