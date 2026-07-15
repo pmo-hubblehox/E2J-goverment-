@@ -115,7 +115,7 @@ export default function CoursesPage() {
   const [sgCourses, setSgCourses] = useState<SkillGapCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [aspirationFilter, setAspirationFilter] = useState<string>('all');
+  const [aspirationFilter, setAspirationFilter] = useState<string>(() => initialRole || 'all');
 
   useEffect(() => {
     setLoading(true);
