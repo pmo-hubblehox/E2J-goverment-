@@ -426,9 +426,15 @@ function FilterDropdown({ workMode, setWorkMode, location, setLocation, location
 
 /* ─────────── Main Page ─────────── */
 export default function JobsPage() {
+  const [initialRoleFilter] = useState<string>(() => {
+    const role = sessionStorage.getItem('jobsRoleFilter') ?? '';
+    if (role) sessionStorage.removeItem('jobsRoleFilter');
+    return role;
+  });
   const [subSection, setSubSection] = useState<SubSection>('jobs');
-  const [tab, setTab] = useState<JobTab>('all');
+  const [tab, setTab] = useState<JobTab>(() => initialRoleFilter ? 'recommended' : 'all');
   const [search, setSearch] = useState('');
+  const [aspirationFilter, setAspirationFilter] = useState<string>(() => initialRoleFilter || 'all');
   const [workModeFilter, setWorkModeFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [allJobs, setAllJobs] = useState<ApiJob[]>([]);
@@ -496,7 +502,7 @@ export default function JobsPage() {
     api.get('/student/aspirations')
       .then(r => {
         const roles: string[] = (r.data?.data ?? r.data ?? []).map((a: any) => a.roleArea).filter(Boolean);
-        setAspirationRoles(roles);
+        setAspirationRoles(Array.from(new Set(roles)));
       })
       .catch((e) => { console.error('[Jobs] aspirations fetch failed:', e); });
   }, []);
@@ -526,23 +532,32 @@ export default function JobsPage() {
     subSection === 'internship' ? j.postingType === 'INTERNSHIP' : j.postingType === 'JOB'
   );
 
+  const GENERIC_ROLE_WORDS = new Set(['engineer', 'manager', 'analyst', 'developer', 'specialist', 'officer', 'executive', 'associate', 'lead', 'intern', 'consultant']);
+  const roleMatchesJob = (role: string, j: ApiJob) => {
+    const jobTitle = (j.jobRole ?? '').toLowerCase();
+    const jobDept  = (j.department ?? '').toLowerCase();
+    const allWords = role.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const domainWords = allWords.filter(w => !GENERIC_ROLE_WORDS.has(w));
+    const words = domainWords.length > 0 ? domainWords : allWords;
+    return words.some(w => jobTitle.includes(w) || jobDept.includes(w));
+  };
+
+  const recommendedFiltered = typeFiltered.filter(j => {
+    const jobTitle = (j.jobRole ?? '').toLowerCase();
+    const jobDept  = (j.department ?? '').toLowerCase();
+    const matchesAspiration = aspirationRoles.some(role => roleMatchesJob(role, j));
+    const matchingSkill = studentSkills.find(s => s.length >= 3 && (jobTitle.includes(s.toLowerCase()) || jobDept.includes(s.toLowerCase())));
+    const matchesSkills = !!matchingSkill;
+    if (aspirationRoles.length === 0 && studentSkills.length === 0) return true;
+    return matchesAspiration || matchesSkills;
+  });
+
   const tabFiltered = typeFiltered.filter(j => {
     if (tab === 'applied') return appliedIds.has(j.id);
     if (tab === 'saved') return savedIds.has(j.id);
     if (tab === 'recommended') {
-      const jobTitle = (j.jobRole ?? '').toLowerCase();
-      const jobDept  = (j.department ?? '').toLowerCase();
-      const GENERIC = new Set(['engineer', 'manager', 'analyst', 'developer', 'specialist', 'officer', 'executive', 'associate', 'lead', 'intern', 'consultant']);
-      const matchesAspiration = aspirationRoles.some(role => {
-        const allWords = role.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-        const domainWords = allWords.filter(w => !GENERIC.has(w));
-        const words = domainWords.length > 0 ? domainWords : allWords;
-        return words.some(w => jobTitle.includes(w) || jobDept.includes(w));
-      });
-      const matchingSkill = studentSkills.find(s => s.length >= 3 && (jobTitle.includes(s.toLowerCase()) || jobDept.includes(s.toLowerCase())));
-      const matchesSkills = !!matchingSkill;
-      if (aspirationRoles.length === 0 && studentSkills.length === 0) return true;
-      return matchesAspiration || matchesSkills;
+      if (!recommendedFiltered.includes(j)) return false;
+      return aspirationFilter === 'all' || roleMatchesJob(aspirationFilter, j);
     }
     return true;
   });
@@ -706,6 +721,23 @@ export default function JobsPage() {
         {/* Filter */}
         <FilterDropdown workMode={workModeFilter} setWorkMode={setWorkModeFilter} location={locationFilter} setLocation={setLocationFilter} locations={uniqueLocations} />
       </div>
+
+      {/* Aspiration filter pills */}
+      {tab === 'recommended' && aspirationRoles.length > 1 && (
+        <div style={{ background: '#fff', borderBottom: `1px solid ${BORDER}`, padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flexShrink: 0 }}>
+          <span style={{ fontSize: '12px', color: SUB, fontWeight: 500 }}>Filter by aspiration:</span>
+          <button onClick={() => setAspirationFilter('all')}
+            style={{ padding: '5px 14px', borderRadius: '100px', border: `1.5px solid ${aspirationFilter === 'all' ? PRIMARY : BORDER}`, background: aspirationFilter === 'all' ? PRIMARY : '#fff', color: aspirationFilter === 'all' ? '#fff' : SUB, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+            All ({recommendedFiltered.length})
+          </button>
+          {aspirationRoles.map(role => (
+            <button key={role} onClick={() => setAspirationFilter(role)}
+              style={{ padding: '5px 14px', borderRadius: '100px', border: `1.5px solid ${aspirationFilter === role ? PRIMARY : BORDER}`, background: aspirationFilter === role ? PRIMARY : '#fff', color: aspirationFilter === role ? '#fff' : SUB, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+              {role} ({recommendedFiltered.filter(j => roleMatchesJob(role, j)).length})
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', background: '#F8FAFC' }}>

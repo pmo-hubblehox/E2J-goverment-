@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 // @ts-ignore
 import ForceGraph2DRaw from 'react-force-graph-2d';
 const ForceGraph2D = ForceGraph2DRaw as any;
-// @ts-ignore
-import { forceCollide } from 'd3-force';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, AlertCircle, RotateCcw, ExternalLink, TrendingUp } from 'lucide-react';
 import api from '../../services/api';
@@ -26,7 +24,7 @@ const TEXT      = '#1E293B';
 const SUB       = '#64748B';
 const BG        = '#F8FAFC';
 
-const SKILL_TYPES = ['Technical', 'Soft', 'Knowledge'] as const;
+const SKILL_TYPES = ['Knowledge', 'Technical', 'Soft'] as const;
 
 const SECTION_CONFIG: Record<string, { label: string; bg: string; border: string }> = {
   Technical:  { label: 'Practical Application', bg: '#EEF2FF', border: '#C7D2FE' },
@@ -82,35 +80,69 @@ function NetworkGraph({ clusterMap, courseSkillSet }: {
     });
     const top = Object.entries(weights).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n);
 
-    const clusterRingR = Math.max(100, top.length * 20);
+    // Static, non-overlapping layout: every node gets a fixed (fx, fy) computed
+    // from label length + neighbour count, so nothing depends on physics settling.
+    const charW = 7.5; // deliberately generous px-per-character estimate (bold sans-serif) — better to over-reserve space than let text collide
+    const skillLabelW = (s: string) => 28 + s.length * charW;
+    const clusterLabelW = (s: string) => 40 + s.length * charW;
+
+    // Pass 1: work out each cluster's own satellite ring radius and its longest
+    // outward-reaching label, so we know how far each cluster "reaches" before we
+    // decide how far apart cluster centers need to be.
+    const clusterInfo = top.map(clusterName => {
+      const skills = clusterMap[clusterName];
+      const valid = Array.isArray(skills) ? skills.filter(s => Array.isArray(s) && s.length >= 3) : [];
+      const count = Math.max(valid.length, 1);
+      const longestLabel = Math.max(...valid.map(s => skillLabelW((s as [string, number, boolean])[0])), 70);
+      const circumferenceNeeded = count * (longestLabel + 40);
+      // The cluster's own label can reach out in any direction (whichever way the
+      // cluster itself faces on the outer ring), so no skill may sit closer than
+      // that label's own length — otherwise the cluster label runs straight through it.
+      const ownLabelReach = 35 + 6 + clusterLabelW(clusterName) + 30;
+      const skillRadius = Math.max(115, circumferenceNeeded / (2 * Math.PI), ownLabelReach);
+      return { clusterName, valid, count, skillRadius, reach: skillRadius + longestLabel + 40 };
+    });
+    const maxReach = Math.max(...clusterInfo.map(c => c.reach), 170);
+
+    // Cluster ring radius: large enough that (a) the two closest adjacent clusters'
+    // full reach can't meet, AND (b) clusters directly opposite each other (which
+    // happens whenever the cluster count is even) can't meet across the center either.
+    const n = Math.max(top.length, 2);
+    const adjacentR = maxReach / Math.sin(Math.PI / n);
+    const oppositeR = maxReach * 1.2;
+    const baseRingR = Math.max(260, adjacentR, oppositeR);
+
+    // Stagger every other cluster onto a slightly larger ring — a small diagonal offset
+    // that adds extra breathing room between neighbours without needing one huge uniform radius.
     top.forEach((name, i) => {
-      const angle = (i / top.length) * 2 * Math.PI;
+      const angle = (i / top.length) * 2 * Math.PI - Math.PI / 2;
+      const ringR = i % 2 === 0 ? baseRingR : baseRingR * 1.3;
       nodes.push({
         id: name, name,
         color: '#1976D2', size: 35,
-        fx: clusterRingR * Math.cos(angle),
-        fy: clusterRingR * Math.sin(angle),
+        fx: ringR * Math.cos(angle),
+        fy: ringR * Math.sin(angle),
+        labelAngle: angle,
       });
     });
 
-    entries.forEach(([clusterName, skills]) => {
-      if (!top.includes(clusterName) || !Array.isArray(skills)) return;
+    clusterInfo.forEach(({ clusterName, valid, count, skillRadius }) => {
       const clusterNode = nodes.find(n => n.id === clusterName);
-      const valid = skills.filter(s => Array.isArray(s) && s.length >= 3);
+
       valid.forEach((s, idx) => {
         const [sName, w, core] = s as [string, number, boolean];
         const inCurriculum = courseSkillSet.has(sName);
         const skillId = `${clusterName}__${sName}`;
         if (!ids.has(skillId)) {
           ids.add(skillId);
-          const skillAngle = (idx / Math.max(valid.length, 1)) * 2 * Math.PI;
-          const skillRadius = 65 + Math.min((w as number) * 1.5, 25);
+          const skillAngle = (idx / count) * 2 * Math.PI - Math.PI / 2;
           nodes.push({
             id: skillId, name: sName,
             color: (core as boolean) ? '#43A047' : inCurriculum ? '#F59E0B' : '#EF4444',
             size: Math.min(12 + (w as number) * 2.5, 22),
-            x: clusterNode.fx + skillRadius * Math.cos(skillAngle),
-            y: clusterNode.fy + skillRadius * Math.sin(skillAngle),
+            fx: clusterNode.fx + skillRadius * Math.cos(skillAngle),
+            fy: clusterNode.fy + skillRadius * Math.sin(skillAngle),
+            labelAngle: skillAngle,
           });
         }
         links.push({ source: clusterName, target: skillId });
@@ -149,20 +181,8 @@ function NetworkGraph({ clusterMap, courseSkillSet }: {
         linkColor={() => 'rgba(156,163,175,0.35)'}
         linkWidth={1.5}
         backgroundColor="#f9fafb"
-        cooldownTicks={200}
-        d3AlphaDecay={0.022}
-        d3VelocityDecay={0.3}
-        warmupTicks={80}
-        onEngineStop={() => {
-          graphData.nodes.forEach((n: any) => { if (!n.id.includes('__')) { n.fx = null; n.fy = null; } });
-          graphRef.current?.zoomToFit(400, 60);
-        }}
-        d3Force={(f: any) => {
-          f('charge').strength((node: any) => !node.id.includes('__') ? -250 : -90);
-          f('link').distance(60).strength(0.4);
-          f('collide', forceCollide().radius((d: any) => (d.size || 10) + 8).strength(1));
-          f('center').x(0).y(0).strength(0.03);
-        }}
+        cooldownTicks={0}
+        onEngineStop={() => graphRef.current?.zoomToFit(400, 60)}
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
           const fontSize = Math.max(10 / globalScale, 5);
           const r = (node.size || 10) / globalScale;
@@ -170,11 +190,37 @@ function NetworkGraph({ clusterMap, courseSkillSet }: {
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
           ctx.fillStyle = node.color || '#999';
           ctx.fill();
+
+          // Push the label outward in the same direction the node sits from its
+          // cluster (or, for cluster nodes, from the graph center) instead of always
+          // placing it below — this is what keeps left/right-side labels from
+          // colliding with the node directly below them.
+          const angle = typeof node.labelAngle === 'number' ? node.labelAngle : Math.PI / 2;
+          const dx = Math.cos(angle);
+          const dy = Math.sin(angle);
+          const gap = 6 / globalScale;
+          const labelX = node.x + dx * (r + gap);
+          const labelY = node.y + dy * (r + gap);
+
           ctx.font = `600 ${fontSize}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
+          ctx.textAlign = dx > 0.3 ? 'left' : dx < -0.3 ? 'right' : 'center';
+          ctx.textBaseline = dy > 0.3 ? 'top' : dy < -0.3 ? 'bottom' : 'middle';
+
+          // Light background plate behind the text so labels stay legible even if a link line crosses behind them.
+          const textW = ctx.measureText(node.name).width;
+          const padX = 3 / globalScale, padY = 2 / globalScale;
+          let plateX = labelX;
+          if (ctx.textAlign === 'left') plateX = labelX - padX;
+          else if (ctx.textAlign === 'right') plateX = labelX - textW - padX;
+          else plateX = labelX - textW / 2 - padX;
+          const plateY = ctx.textBaseline === 'top' ? labelY - padY
+            : ctx.textBaseline === 'bottom' ? labelY - fontSize - padY
+            : labelY - fontSize / 2 - padY;
+          ctx.fillStyle = 'rgba(249,250,251,0.85)';
+          ctx.fillRect(plateX, plateY, textW + padX * 2, fontSize + padY * 2);
+
           ctx.fillStyle = '#374151';
-          ctx.fillText(node.name, node.x, node.y + r + 2);
+          ctx.fillText(node.name, labelX, labelY);
         }}
       />
     </div>
@@ -312,7 +358,7 @@ export default function SkillGapReportPage() {
   const [viewingRole, setViewingRole]   = useState(viewSaved ? targetRole : '');
   const [genError, setGenError]         = useState('');
   const [showCourses, setShowCourses]   = useState(false);
-  const [activeTab, setActiveTab]       = useState<string>('Technical');
+  const [activeTab, setActiveTab]       = useState<string>('Knowledge');
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopPolling = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };

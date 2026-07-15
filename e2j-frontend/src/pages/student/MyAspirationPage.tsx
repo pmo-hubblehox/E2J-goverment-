@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Loader2, Trash2, ArrowLeft, Plus, Briefcase, Clock, Download, BookOpen } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Check, Rocket, TrendingUp, Zap, Loader2, Trash2, ArrowLeft, Plus, Briefcase, Clock, Download, BookOpen, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -1298,37 +1298,35 @@ export default function MyAspirationPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Role + Skills */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#EEEEFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Briefcase size={18} color={PRIMARY} />
+        {/* Journey */}
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '22px' }}>
+          <p style={{ margin: '0 0 2px', fontSize: '12px', color: SUB }}>Your journey to</p>
+          <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 700, color: TEXT }}>{selected.roleArea}</h3>
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            {([
+              { key: 'gap',     icon: BarChart3, label: 'Skill gap report',   active: true,  onClick: () => {
+                  if (selected.goal === 'explore') {
+                    resetExplore(); setFlowStep('explore' as any); setExploreStep('report'); setPsychReport(detailPsychReport); setView('wizard');
+                    return;
+                  }
+                  const existing = skillGapReports.find(rp => rp.targetRole === selected.roleArea);
+                  if (existing) navigate('/student/skill-gap/report', { state: { targetRole: existing.targetRole, reportId: existing.id, viewSaved: true } });
+                  else navigate('/student/skill-gap/report', { state: { targetRole: selected.roleArea } });
+                } },
+              { key: 'courses', icon: BookOpen,  label: 'Courses to bridge it', active: false, onClick: () => { sessionStorage.setItem('psychCourseRole', selected.roleArea); navigate('/student/courses'); } },
+              { key: 'jobs',    icon: Briefcase, label: 'Jobs to fit in',     active: false, onClick: () => { sessionStorage.setItem('jobsRoleFilter', selected.roleArea); navigate('/student/jobs'); } },
+            ] as const).map((step, i, arr) => (
+              <div key={step.key} style={{ display: 'flex', alignItems: 'center', flex: i < arr.length - 1 ? 1 : 0 }}>
+                <button onClick={step.onClick}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: step.active ? PRIMARY : '#fff', border: `2px solid ${step.active ? PRIMARY : BORDER}` }}>
+                    <step.icon size={20} color={step.active ? '#fff' : '#94A3B8'} />
+                  </div>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: step.active ? TEXT : SUB, whiteSpace: 'nowrap' as const }}>{step.label}</span>
+                </button>
+                {i < arr.length - 1 && <div style={{ flex: 1, height: '2px', background: step.active ? PRIMARY : BORDER, margin: '0 4px 28px' }} />}
               </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: TEXT }}>Target Role</h4>
-                <p style={{ margin: 0, fontSize: '12px', color: SUB }}>Your selected career goal</p>
-              </div>
-            </div>
-            <span style={{ padding: '7px 16px', borderRadius: '100px', background: '#EEEEFF', color: PRIMARY, fontSize: '14px', fontWeight: 700, border: '1px solid #C7C9F7' }}>{selected.roleArea}</span>
-          </div>
-
-          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Zap size={18} color="#22C55E" />
-              </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: TEXT }}>Skills</h4>
-                <p style={{ margin: 0, fontSize: '12px', color: SUB }}>{selected.skills?.length ?? 0} skills saved</p>
-              </div>
-            </div>
-            {selected.skills?.length > 0
-              ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {selected.skills.map(s => <span key={s} style={{ padding: '5px 12px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', fontSize: '12px', fontWeight: 500, border: '1px solid #BBF7D0' }}>{s}</span>)}
-                </div>
-              : <p style={{ margin: 0, fontSize: '13px', color: '#94A3B8' }}>No skills attached to this aspiration.</p>
-            }
+            ))}
           </div>
         </div>
 
