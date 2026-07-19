@@ -116,8 +116,8 @@ public class SkillGapService {
                 log.warn("[SkillGap] PDF text extraction returned blank | studentId={}", student.getId());
                 throw new AppException("Could not extract text from resume PDF.", HttpStatus.BAD_REQUEST);
             }
-            log.info("[SkillGap] PDF text extracted | chars={} | truncating={}", resumeText.length(), resumeText.length() > 4000);
-            String truncatedResume = resumeText.length() > 4000 ? resumeText.substring(0, 4000) : resumeText;
+            log.info("[SkillGap] PDF text extracted | chars={} | truncating={}", resumeText.length(), resumeText.length() > 2500);
+            String truncatedResume = resumeText.length() > 2500 ? resumeText.substring(0, 2500) : resumeText;
 
             String prompt = String.format("""
                 You are an expert career analyst with deep knowledge of the current job market and university curricula in India.

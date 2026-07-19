@@ -428,9 +428,9 @@ public class InstituteController {
         String major = body.containsKey("major") ? (String) body.get("major")
                 : (program.getMajors() != null && !program.getMajors().isEmpty() ? program.getMajors().get(0) : "");
 
-        // Fetch top 12 trending job roles for this program, then generate curriculum targeting them
+        // Fetch top 5 trending job roles for this program, then generate curriculum targeting them
         List<String> jobRoles = groqService.fetchTopJobRoles(
-                program.getName(), major, program.getDegree(), 12);
+                program.getName(), major, program.getDegree(), 5);
         String aiJson = groqService.generateEnhancedCurriculum(syllabusJson, jobRoles);
 
         @SuppressWarnings("unchecked")
