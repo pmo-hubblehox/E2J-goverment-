@@ -16,6 +16,26 @@ interface SkillGapResult {
 
 interface TrendingRole  { title: string; demand: number; category: string; }
 
+interface RecommendedWorkshop {
+  id: number; title: string; targetRole?: string; mode?: string;
+  city?: string; state?: string; sessionDate?: string; feeAmount?: number;
+}
+
+interface RecommendedJob {
+  id: number; jobRole: string; companyName?: string; department?: string;
+  location?: string; workMode?: string; employmentType?: string;
+}
+
+const GENERIC_ROLE_WORDS = new Set(['engineer', 'manager', 'analyst', 'developer', 'specialist', 'officer', 'executive', 'associate', 'lead', 'intern', 'consultant']);
+function jobMatchesRole(role: string, j: RecommendedJob): boolean {
+  const jobTitle = (j.jobRole ?? '').toLowerCase();
+  const jobDept  = (j.department ?? '').toLowerCase();
+  const allWords = role.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const domainWords = allWords.filter(w => !GENERIC_ROLE_WORDS.has(w));
+  const words = domainWords.length > 0 ? domainWords : allWords;
+  return words.some(w => jobTitle.includes(w) || jobDept.includes(w));
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PRIMARY   = '#3F41D1';
@@ -357,8 +377,16 @@ export default function SkillGapReportPage() {
   const [viewingReport, setViewingReport] = useState<SkillGapResult | null>(null);
   const [viewingRole, setViewingRole]   = useState(viewSaved ? targetRole : '');
   const [genError, setGenError]         = useState('');
-  const [showCourses, setShowCourses]   = useState(false);
+  const [activeSection, setActiveSection] = useState<'analysis' | 'courses' | 'workshops' | 'jobs'>('analysis');
   const [activeTab, setActiveTab]       = useState<string>('Knowledge');
+
+  const [workshops, setWorkshops]             = useState<RecommendedWorkshop[]>([]);
+  const [workshopsLoading, setWorkshopsLoading] = useState(false);
+  const [workshopsFetched, setWorkshopsFetched] = useState(false);
+
+  const [recommendedJobs, setRecommendedJobs]   = useState<RecommendedJob[]>([]);
+  const [jobsLoading, setJobsLoading]           = useState(false);
+  const [jobsFetched, setJobsFetched]           = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopPolling = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
@@ -464,6 +492,29 @@ export default function SkillGapReportPage() {
     localStorage.removeItem(TASK_KEY);
     navigate('/student/aspiration');
   };
+
+  const reportRoleForFetch = phase === 'saved-report' ? viewingRole : targetRole;
+
+  useEffect(() => {
+    if (activeSection !== 'workshops' || workshopsFetched) return;
+    setWorkshopsLoading(true);
+    api.get('/student/workshops', { params: { role: reportRoleForFetch } })
+      .then(r => setWorkshops((r.data?.data ?? []).slice(0, 9)))
+      .catch(() => setWorkshops([]))
+      .finally(() => { setWorkshopsLoading(false); setWorkshopsFetched(true); });
+  }, [activeSection, workshopsFetched, reportRoleForFetch]);
+
+  useEffect(() => {
+    if (activeSection !== 'jobs' || jobsFetched) return;
+    setJobsLoading(true);
+    api.get('/student/jobs')
+      .then(r => {
+        const all: RecommendedJob[] = r.data?.data ?? [];
+        setRecommendedJobs(all.filter(j => jobMatchesRole(reportRoleForFetch, j)).slice(0, 9));
+      })
+      .catch(() => setRecommendedJobs([]))
+      .finally(() => { setJobsLoading(false); setJobsFetched(true); });
+  }, [activeSection, jobsFetched, reportRoleForFetch]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
@@ -602,23 +653,26 @@ export default function SkillGapReportPage() {
               <h2 style={{ fontSize: '24px', fontWeight: 800, margin: 0 }}>{reportRole}</h2>
               {phase === 'report' && saved && <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: '20px', marginTop: '6px', display: 'inline-block' }}>✓ Auto-saved</span>}
             </div>
-            {courseList.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['Skill Analysis', 'Courses'].map(tab => {
-                  const active = tab === 'Courses' ? showCourses : !showCourses;
-                  return (
-                    <button key={tab} onClick={() => setShowCourses(tab === 'Courses')}
-                      style={{ padding: '8px 18px', borderRadius: '8px', border: '1.5px solid rgba(255,255,255,0.5)', background: active ? '#fff' : 'transparent', color: active ? PRIMARY : '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                      {tab}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' as const }}>
+              {([
+                { key: 'analysis',  label: 'Skill Analysis' },
+                ...(courseList.length > 0 ? [{ key: 'courses' as const, label: 'Courses' }] : []),
+                { key: 'workshops', label: 'Workshops' },
+                { key: 'jobs',      label: 'Jobs' },
+              ] as const).map(tab => {
+                const active = activeSection === tab.key;
+                return (
+                  <button key={tab.key} onClick={() => setActiveSection(tab.key)}
+                    style={{ padding: '8px 18px', borderRadius: '8px', border: '1.5px solid rgba(255,255,255,0.5)', background: active ? '#fff' : 'transparent', color: active ? PRIMARY : '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Skill Analysis ── */}
-          {!showCourses && (
+          {activeSection === 'analysis' && (
             <div>
               {/* Legend */}
               <div style={{ display: 'flex', gap: '20px', marginBottom: '14px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
@@ -678,7 +732,7 @@ export default function SkillGapReportPage() {
           )}
 
           {/* ── Courses ── */}
-          {showCourses && (
+          {activeSection === 'courses' && (
             <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '22px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: TEXT, margin: '0 0 18px' }}>Course Recommendations ({courseList.length})</h3>
               {courseList.length === 0 ? (
@@ -698,6 +752,71 @@ export default function SkillGapReportPage() {
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: PRIMARY, borderRadius: '20px', color: '#fff', fontSize: '11px', fontWeight: 600, textDecoration: 'none' }}>
                           View <ExternalLink size={10} />
                         </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Workshops ── */}
+          {activeSection === 'workshops' && (
+            <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '22px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: TEXT, margin: '0 0 18px' }}>Recommended Workshops ({workshops.length})</h3>
+              {workshopsLoading ? (
+                <p style={{ color: '#94A3B8', textAlign: 'center', padding: '32px 0', margin: 0 }}>Loading workshops…</p>
+              ) : workshops.length === 0 ? (
+                <p style={{ color: '#94A3B8', textAlign: 'center', padding: '32px 0', margin: 0 }}>No matching workshops found for this role right now.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '14px' }}>
+                  {workshops.map(w => (
+                    <div key={w.id} style={{ display: 'flex', gap: '14px', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '14px', background: BG }}>
+                      <div style={{ width: '54px', height: '54px', borderRadius: '8px', background: 'linear-gradient(135deg,#EEF2FF,#C7D2FE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '24px' }}>🎓</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: TEXT, lineHeight: 1.4 }}>{w.title}</h4>
+                        <p style={{ fontSize: '11px', color: '#94A3B8', margin: '0 0 8px' }}>
+                          {w.targetRole ?? reportRole} · {w.mode === 'ONLINE' ? 'Online' : [w.city, w.state].filter(Boolean).join(', ')}{w.sessionDate ? ` · ${w.sessionDate}` : ''}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: PRIMARY }}>{w.feeAmount ? `₹${w.feeAmount.toLocaleString()}` : 'Free'}</span>
+                          <button onClick={() => { sessionStorage.setItem('workshopsScope', 'recommended'); navigate('/student/workshops'); }}
+                            style={{ padding: '5px 12px', background: PRIMARY, border: 'none', borderRadius: '20px', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                            Enroll
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Jobs ── */}
+          {activeSection === 'jobs' && (
+            <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '22px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: TEXT, margin: '0 0 18px' }}>Recommended Jobs ({recommendedJobs.length})</h3>
+              {jobsLoading ? (
+                <p style={{ color: '#94A3B8', textAlign: 'center', padding: '32px 0', margin: 0 }}>Loading jobs…</p>
+              ) : recommendedJobs.length === 0 ? (
+                <p style={{ color: '#94A3B8', textAlign: 'center', padding: '32px 0', margin: 0 }}>No matching jobs found for this role right now.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '14px' }}>
+                  {recommendedJobs.map(j => (
+                    <div key={j.id} style={{ display: 'flex', gap: '14px', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '14px', background: BG }}>
+                      <div style={{ width: '54px', height: '54px', borderRadius: '8px', background: 'linear-gradient(135deg,#EEF2FF,#C7D2FE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '24px' }}>💼</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: TEXT, lineHeight: 1.4 }}>{j.jobRole}</h4>
+                        <p style={{ fontSize: '11px', color: '#94A3B8', margin: '0 0 8px' }}>
+                          {j.companyName ?? '—'} · {j.workMode === 'ONLINE' ? 'Remote' : (j.location ?? '—')}{j.employmentType ? ` · ${j.employmentType}` : ''}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button onClick={() => { sessionStorage.setItem('jobsRoleFilter', reportRole); navigate('/student/jobs'); }}
+                            style={{ padding: '5px 12px', background: PRIMARY, border: 'none', borderRadius: '20px', color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                            Apply
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

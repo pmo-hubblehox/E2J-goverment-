@@ -200,7 +200,11 @@ function ReviewModal({ enrollment, onClose, onDone }: { enrollment: Enrollment; 
 
 export default function WorkshopsPage() {
   const [tab, setTab] = useState<'browse' | 'bookings'>('browse');
-  const [scope, setScope] = useState<'all' | 'recommended'>('all');
+  const [scope, setScope] = useState<'all' | 'recommended'>(() => {
+    const s = sessionStorage.getItem('workshopsScope');
+    if (s) sessionStorage.removeItem('workshopsScope');
+    return s === 'recommended' ? 'recommended' : 'all';
+  });
   const [modeFilter, setModeFilter] = useState<'' | 'ONLINE' | 'IN_PERSON'>('');
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
